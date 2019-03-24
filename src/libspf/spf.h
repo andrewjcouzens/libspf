@@ -1,0 +1,400 @@
+/* libspf - Sender Policy Framework library
+*
+*  ANSI C implementation of spf-draft-200405.txt
+*
+*  Author: James Couzens <jcouzens@codeshare.ca>
+*  Author: Sean Comeau   <scomeau@obscurity.org>
+*
+*  FILE: spf.h
+*  DESC: main library header file
+*
+*  License:
+*
+*  The libspf Software License, Version 1.0
+*
+*  Copyright (c) 2004 James Couzens & Sean Comeau  All rights
+*  reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*  1. Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright
+*     notice, this list of conditions and the following disclaimer in
+*     the documentation and/or other materials provided with the
+*     distribution.
+*
+*  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+*  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+*  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+*  DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS MAKING USE OF THIS LICESEN
+*  OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+*  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+*  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+*  USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+*  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+*  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+*  OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+*  SUCH DAMAGE.
+*
+*/
+
+
+#ifndef _SPF_H
+#define _SPF_H 1
+
+#include <sys/types.h>    /* typedefs */
+#include <netinet/in.h>   /* in_addr struct fBSD */
+#include <arpa/inet.h>    /* in_addr struct */
+
+__BEGIN_DECLS
+
+/* spf protocol version we support */
+#define SPF_VERSION 1
+
+/*
+*  For reference purposes commented out are the constants based on
+*  RFC 883, RFC 1034, RFC 1035.
+*
+*  #define PACKETSZ  512   max response packet size
+*  #define MAXDNAME  1025  max uncompressed IN_TXT record
+*  #define MAXCDNAME 255   max compressed IN_TXT record
+*
+*/
+
+#define SPF_MAX_CNAME      5     /* we follow up max CNAMEs */
+#define SPF_MAX_DEBUG      2048  /* maximum for debug code to malloc */
+#define SPF_MAX_MACRO      1024  /* max length of an expanded macro */
+#define SPF_MAX_STR        4096  /* max length of any dynamically allocated string */
+#define SPF_MAX_DELIM      255   /* used by UTIL_count_delim() */
+
+#define SPF_MAX_LOCAL_PART 256   /* local-part, text before @ in email addy */
+#define SPF_MAX_ENV_SENDER 512   /* entire FROM: string passed by MTA */
+#define SPF_MAX_CUR_DOM    256   /* text after @ in email addy for cur query */
+#define SPF_MAX_UTC_TIME   22    /* time since epoch */
+#define SPF_MAX_IP_ADDR    17    /* ip of remote peer - DON'T CHANGE FROM 17!! */
+#define SPF_MAX_IP_VER     8     /* ip protocol version */
+#define SPF_MAX_ENV_HELO   512   /* entire HELO string passed by MTA */
+
+#define SPF_MAX_HNAME      256   /* hostname of MTA */
+#define SPF_MAX_RESULT      64   /* human readable SPF result */
+#define SPF_MAX_ERROR       96   /* human readable error reason */
+#define SPF_MAX_EXPLAIN_S  256   /* change to EXPLAIN when cleaning up */
+#define SPF_MAX_ENV_RECV   512   /* maximum length of RFC2821 header string */
+#define SPF_MAX_RES_STR     12   /* maximum legnth of a res str eg: "pass" */
+
+#define SPF_MAX_MECHANISM  256   /* maximum length of a mechanism */
+#define SPF_MAX_HEADER     512   /* maximum length of header for prepend */
+#define SPF_MAX_SMTP_RES   256   /* maximum length of smtp resonse string */
+
+/* human readable string equivalents of spf responses */
+#define HR_RFC2822  "Received-SPF: "
+#define HR_PASS     "pass"
+#define HR_NONE     "none"
+#define HR_S_FAIL   "softfail"
+#define HR_H_FAIL   "fail"
+#define HR_ERROR    "error"
+#define HR_NEUTRAL  "neutral"
+#define HR_UNKNOWN  "unknown"
+#define HR_UNMECH   "unknown mechanism"
+
+/* default explanation */
+#define SPF_EXPLAIN "See http://spf.pobox.com/why.html?sender=%{S}&"      \
+                    "ip=%{I}&receiver=%{xR}"
+
+/* default best guess */
+#define SPF_GUESS   "v=spf1 a/24 mx/24 ptr"
+
+/* trusted forwarder */
+#define SPF_TRUSTED "v=spf1 include:spf.trusted-forwarder.org"
+
+
+/* SPF_BOOL
+*
+*  Our own internal boolean enumeration, simple true or false.
+*
+*  Sendmail has issues because it makes use of SPF_FALSE and SPF_TRUE
+*  Simple way around it iis to simply check and see if they are
+*  defined or not since we're declaring this enumeration
+*  globally.
+*
+*  A more graceful fix has been implemented in libspf 3.0 where
+*  we now make use of SPF_SPF_TRUE and SPF_SPF_FALSE to steer clear of
+*  problems such as this elsewhere.
+*
+*/
+
+typedef enum SPF_BOOL
+{
+  SPF_FALSE = 0,
+  SPF_TRUE
+} SPF_BOOL;
+
+
+/* SPF_RESULT
+*
+*  Error codes representing the result of an SPF policy examination
+*
+*  sucessful parse (some match was made) (+all)
+*  not participating (no SPF/TXT records)
+*  ~all
+*  failed parse (no match made) (-all)
+*  dns problem / error
+*  ?all
+*  permanent parsing error during record examination
+*
+*/
+typedef enum SPF_RESULT
+{
+  SPF_PASS = 0,     /* + */
+  SPF_NONE,
+  SPF_S_FAIL,       /* ~ */
+  SPF_H_FAIL,       /* - */
+  SPF_ERROR,
+  SPF_NEUTRAL,      /* ? */
+  SPF_UNKNOWN,
+  SPF_UNMECH        /* unknown mechanism */
+} SPF_RESULT;
+
+
+/* SPF_ACTION
+*
+*  Error codes representing the the action to be taken as a result
+*  of the response the library was able to obtain whilst trying to
+*  obtain or examin an SPF policy
+*
+*/
+typedef enum SPF_ACTION
+{
+  DEFER = 0,
+  TARPIT,
+  ALLOW,
+  REJECT
+} SPF_ACTION;
+
+
+/* SPF_MECHANISM
+*
+*  Error codes representing the various mechanism types employed
+*  as defined in the RFC
+*
+*/
+#undef VERSION /* autoconf */
+typedef enum SPF_MECHANISM
+{
+  NO_POLICY = 0,
+  VERSION,
+  ALL,
+  INCLUDE,
+  A,
+  MX,
+  PTR,
+  IP4,
+  IP6,
+  EXISTS,
+  REDIRECT,
+  EXPLAIN,
+  DEFAULT, /* this is OLD school for early adopters = ~,?,+,- */
+  UNMECH
+} SPF_MECHANISM;
+
+
+/* spf_result_t
+*
+*  Storage container used to store the result of an SPF parse.
+*
+*/
+typedef struct spf_result_t
+{
+  size_t sl;      /* spf result string length */
+  char s[32];     /* spf result type string */
+  SPF_RESULT i;   /* spf result type */
+  size_t hl;      /* length of header string */
+  char h[512];    /* Received-SPF: header string */
+  char p;         /* prefix identifier */
+} spf_result_t;
+
+
+/* policy_addr_t
+*
+*  Storage container used to store parsed out ip addresses in their
+*  binary format (in_addr struct) and an unsigned integer containing
+*  the netmask
+*
+*/
+typedef struct policy_addr_s
+{
+  SPF_RESULT prefix;      /* spf prefix (-,+,~,?) */
+  int8_t cidr;            /* address cidr length */
+  struct in_addr addr;    /* in_addr struct (unsigned long) */
+} policy_addr_t;
+
+
+/* spf_config_t
+*
+* Global config structure
+*
+*/
+typedef struct spf_config_s
+{
+  int level;    /* debug level bit */
+} spf_config_t;
+
+
+/* split_str_node_t
+*
+*  This structure is used to store where the head and tail are when
+*  creating a list of split_str_node_t structures.
+*
+*/
+typedef struct strbuf_node_s
+{
+  size_t                 len;    /* length of string */
+  char                   *s;     /* expanded string macro */
+  struct strbuf_node_s   *next;  /* pointer to next node */
+} strbuf_node_t;
+
+
+/* strbuf_t
+*
+*  This structure is used exclusively by marco.c functions and is used
+*  to store macros during parsing.
+*
+*/
+typedef struct strbuf_s
+{
+  strbuf_node_t   *head;      /* head node */
+  u_int8_t        elements;   /* number of nodes in list */
+} strbuf_t;
+
+
+/* split_str_node_t
+*
+*  This structure is used to store where the head and tail are when
+*  creating a list of split_str_node_t structures.
+*
+*/
+typedef struct split_str_node_s
+{
+  size_t                   len;    /* length of string */
+  char                     *s;     /* expanded string macro */
+  struct split_str_node_s  *next;  /* pointer to next node */
+} split_str_node_t;
+
+
+/* split_str_t
+*
+*  This structure is used exclusively by the UTIL_reverse function and is
+*  used to reverse a string using a semi-arbitrary delimiter (see
+*  UTIL_is_spf_delim for valid delimiters, or the SPF RFC)
+*/
+typedef struct split_str_s
+{
+  split_str_node_t  *head;      /* head node */
+  split_str_node_t  *tail;      /* tail node */
+  int               elements;   /* number of nodes in list */
+} split_str_t;
+
+
+/* peer_info_t
+*
+*  Used to store information about the connected peer.  Only one of
+*  SMTP protocol specific three strings will be necessarily be
+*  populated in the following order of precedence: FROM, EHLO, HELO.
+*
+*  The ip_ver string will contain 'in-addr' if the connecting peer
+*  is using IPv4, or 'ip6' if the connect
+*
+*  Various political and technical pressures have recently led to
+*  the deprecation of the IP6.INT name space in favour of IP6.ARPA.
+*  This makes IPv6 PTR data management difficult, since interim
+*  clients will search IP6.INT while standard clients will search
+*  IP6.ARPA. We present a simple method based on DNAME RR's
+*  (see [RFC2672]) and ISC BIND9 whereby zone information can be
+*  managed in a single location and then made visible in two
+*  namespaces.  (http://www.isc.org/tn/isc-tn-2002-1.html)
+*
+*  RFC 937 (POP) states: The maximum length of a command line is 512
+*  characters (including the command word and the CRLF).
+*  POLICY_MATCH = SPF_TRUE
+*
+*  Note: from can be removed and just work on local_part@cur_dom
+*
+*/
+typedef struct peer_info_s
+{
+  SPF_BOOL ALL;                           /* Was 'all' mechanism parsed */
+
+  SPF_RESULT RES;                         /* SPF error codes for result */
+  SPF_RESULT RES_P;                       /* prefix behaviour */
+
+  SPF_BOOL use_trust;                     /* T / F trustedfwder */
+  SPF_BOOL use_guess;                     /* T / F best guess */
+
+  u_int8_t spf_ver;                       /* version of SPF */
+
+  char *p;                                /* prefix from all mechanism */
+  char *rs;                               /* ptr str result of SPF query */
+  char *txt;                              /* T_TXT record from DNS */
+  char *helo;                             /* HELO string */
+  char *ehlo;                             /* pointer to HELO string */
+  char *from;                             /* FROM string */
+  char *explain;                          /* Result of an explain query */
+  char *guess;                            /* Query if result is TF fails */
+  char *trusted;                          /* Query if primary result is none */
+  char *ptr_mhost;                        /* validate against during ptr mech */
+  char *current_domain;                   /* @domain of the current query */
+  char *original_domain;                  /* @domain of original query */
+  char *mta_hname;                        /* ptr to MTA hname eg: mx.foo.org */
+  char *r_ip;                             /* pointer to remote ip from MTA */
+  char *r_vhname;                         /* validated hostname of remotehost */
+  char *cur_eaddr;                        /* current email address */
+
+  char ip_ver[SPF_MAX_IP_VER];            /* IP Protocol Version */
+  char local_part[SPF_MAX_LOCAL_PART];    /* local part of address (user) */
+  char utc_time[SPF_MAX_UTC_TIME];        /* The num of sec since the Epoch */
+  char last_m[SPF_MAX_MECHANISM];         /* last mechanism parsed */
+  char error[SPF_MAX_ERROR];              /* error (if any) cause failure */
+
+  spf_result_t *spf_result;               /* table of str, see spf_result_t */
+
+  struct in_addr addr;                    /* IP of the remote host (peer) */
+
+  /*
+  *  Vars below here are specific to recursion through layers of SPF queries
+  *  stemming from 'include' and 'redirect' use.  In addition there is a
+  *  also a buffer for CNAME records.
+ */
+
+  uint8_t spf_rlevel;                     /* recursion level */
+
+  char *cname_buf;                        /* buf for CNAME records */
+  char *redirect_buf;                     /* buf for 'redirect' instances */
+  split_str_t *include_set;               /* linked list for 'include' instances */
+} peer_info_t;
+
+extern spf_config_t confg;
+extern u_int8_t spf_rlevel;
+
+/*  Main library functions (main.c) */
+extern peer_info_t  *SPF_init(const char *, const char *, const char *, const char *,
+                              const char *, u_int32_t, u_int32_t);
+extern peer_info_t  *SPF_close(peer_info_t *);
+extern SPF_RESULT   SPF_policy_main(peer_info_t *);
+extern SPF_BOOL     SPF_parse_policy(peer_info_t *, const char *);
+
+extern char         *SPF_result(peer_info_t *);
+extern SPF_BOOL     SPF_smtp_from(peer_info_t *, const char *);
+extern SPF_BOOL     SPF_smtp_helo(peer_info_t *, const char *);
+
+/* Functions that alter headers (header.c) */
+extern char         *SPF_build_header(peer_info_t *);
+extern char         *SPF_get_explain(peer_info_t *);
+
+
+__END_DECLS /* _SPF_H */
+
+#endif /* spf.h */

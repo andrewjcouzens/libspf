@@ -1,0 +1,974 @@
+*** netqmail-1.05/qmail-smtpd.c	Fri Aug  6 17:05:47 2004
+--- netqmail-1.05.spf/qmail-smtpd.c	Thu Aug  5 08:29:28 2004
+***************
+*** 23,31 ****
+--- 23,34 ----
+  #include "timeoutread.h"
+  #include "timeoutwrite.h"
+  #include "commands.h"
+  
++ #include "spf.h"
++ 
+  #define MAXHOPS 100
++ 
+  unsigned int databytes = 0;
+  int timeout = 1200;
+  
+  int safewrite(fd,buf,len) int fd; char *buf; int len;
+*************** int safewrite(fd,buf,len) int fd; char *
+*** 35,54 ****
+    if (r <= 0) _exit(1);
+    return r;
+  }
+  
+  char ssoutbuf[512];
+  substdio ssout = SUBSTDIO_FDBUF(safewrite,1,ssoutbuf,sizeof ssoutbuf);
+  
+  void flush() { substdio_flush(&ssout); }
+  void out(s) char *s; { substdio_puts(&ssout,s); }
+  
+! void die_read() { _exit(1); }
+! void die_alarm() { out("451 timeout (#4.4.2)\r\n"); flush(); _exit(1); }
+! void die_nomem() { out("421 out of memory (#4.3.0)\r\n"); flush(); _exit(1); }
+! void die_control() { out("421 unable to read controls (#4.3.0)\r\n"); flush(); _exit(1); }
+! void die_ipme() { out("421 unable to figure out my IP addresses (#4.3.0)\r\n"); flush(); _exit(1); }
+! void straynewline() { out("451 See http://pobox.com/~djb/docs/smtplf.html.\r\n"); flush(); _exit(1); }
+  
+  void err_bmf() { out("553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n"); }
+  void err_nogateway() { out("553 sorry, that domain isn't in my list of allowed rcpthosts (#5.7.1)\r\n"); }
+  void err_unimpl(arg) char *arg; { out("502 unimplemented (#5.5.1)\r\n"); }
+--- 38,72 ----
+    if (r <= 0) _exit(1);
+    return r;
+  }
+  
++ /* start libspf modification */
++ peer_info_t *peer_info = NULL;
++ 
++ void close_spf(void) 
++ {
++   if (peer_info != NULL) { peer_info = SPF_close(peer_info); peer_info = NULL; }
++ }
++ /* end libspf modification */
++ 
+  char ssoutbuf[512];
+  substdio ssout = SUBSTDIO_FDBUF(safewrite,1,ssoutbuf,sizeof ssoutbuf);
+  
+  void flush() { substdio_flush(&ssout); }
+  void out(s) char *s; { substdio_puts(&ssout,s); }
+  
+! /* start libspf modification
+! *  all of the die functions call close_spf to make sure that the memory is free'd 
+! *  yes this should not matter as the kernel on any OS should clean up for us but for
+! *  completeness we see it here as we can see any deallocated memory with debugging on
+! */
+! void die_read() { close_spf(); _exit(1); } /* session abruptly closed */
+! void die_alarm() { out("451 timeout (#4.4.2)\r\n"); close_spf(); flush(); _exit(1); }
+! void die_nomem() { out("421 out of memory (#4.3.0)\r\n"); close_spf(); flush(); _exit(1); }
+! void die_control() { out("421 unable to read controls (#4.3.0)\r\n"); close_spf(); flush(); _exit(1); }
+! void die_ipme() { out("421 unable to figure out my IP addresses (#4.3.0)\r\n"); close_spf(); flush(); _exit(1); }
+! void straynewline() { out("451 See http://pobox.com/~djb/docs/smtplf.html.\r\n"); close_spf(); flush(); _exit(1); }
+! /* end libspf modification */
+  
+  void err_bmf() { out("553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n"); }
+  void err_nogateway() { out("553 sorry, that domain isn't in my list of allowed rcpthosts (#5.7.1)\r\n"); }
+  void err_unimpl(arg) char *arg; { out("502 unimplemented (#5.5.1)\r\n"); }
+*************** void err_wantrcpt() { out("503 RCPT firs
+*** 58,65 ****
+--- 76,87 ----
+  void err_noop(arg) char *arg; { out("250 ok\r\n"); }
+  void err_vrfy(arg) char *arg; { out("252 send some mail, i'll try my best\r\n"); }
+  void err_qqt() { out("451 qqt failure (#4.3.0)\r\n"); }
+  
++ /* start libspf modifcation */
++ void die_spf_nopeer(void) { out("421 invalid peer structure (SPF)\r\n"); close_spf(); flush(); _exit(1); }
++ void die_spf_noip(void)   { out("421 unable to store remote ip (SPF)\r\n"); close_spf(); flush(); _exit(1); }
++ /* end libspf modification */
+  
+  stralloc greeting = {0};
+  
+  void smtp_greet(code) char *code;
+*************** void smtp_help(arg) char *arg;
+*** 72,79 ****
+--- 94,102 ----
+    out("214 netqmail home page: http://qmail.org/netqmail\r\n");
+  }
+  void smtp_quit(arg) char *arg;
+  {
++   close_spf();
+    smtp_greet("221 "); out("\r\n"); flush(); _exit(0);
+  }
+  
+  char *remoteip;
+*************** stralloc liphost = {0};
+*** 96,108 ****
+  int bmfok = 0;
+  stralloc bmf = {0};
+  struct constmap mapbmf;
+  
+  void setup()
+  {
+    char *x;
+    unsigned long u;
+!  
+    if (control_init() == -1) die_control();
+    if (control_rldef(&greeting,"control/smtpgreeting",1,(char *) 0) != 1)
+      die_control();
+    liphostok = control_rldef(&liphost,"control/localiphost",1,(char *) 0);
+--- 119,145 ----
+  int bmfok = 0;
+  stralloc bmf = {0};
+  struct constmap mapbmf;
+  
++ /* start libspf modification */
++ unsigned int spf_action   = 1;    /* action upon for spf result (prepend header only) */
++ unsigned int spf_tarpit   = 0;    /* default tarput action (tied to spf result value) (off) */
++ unsigned int spf_tarpitt = 60;    /* default tarpitting timeout */
++ unsigned int spf_explain  = 1;    /* default explain action (on) */
++ unsigned int spf_trusted  = 0;    /* default use trusted forwarder */
++ unsigned int spf_guess    = 0;    /* default use best guess */
++ unsigned int spf_header   = 1;    /* default pre-pend headers */
++ unsigned int spf_debug    = 0;    /* default debug state */
++ stralloc spf_guess_s      = {0};  /* spf query to attempt when guessing */
++ stralloc spf_expl_s       = {0};  /* explanation to override default when rejecting email */
++ stralloc spf_tf_s         = {0};  /* list (on a single line) of trusted forwarders */
++ /* end libspf modification */
++ 
+  void setup()
+  {
+    char *x;
+    unsigned long u;
+!   
+    if (control_init() == -1) die_control();
+    if (control_rldef(&greeting,"control/smtpgreeting",1,(char *) 0) != 1)
+      die_control();
+    liphostok = control_rldef(&liphost,"control/localiphost",1,(char *) 0);
+*************** void setup()
+*** 115,123 ****
+--- 152,206 ----
+    bmfok = control_readfile(&bmf,"control/badmailfrom",0);
+    if (bmfok == -1) die_control();
+    if (bmfok)
+      if (!constmap_init(&mapbmf,bmf.s,bmf.len,0)) die_nomem();
++ 
++ /* start libspf modification */
++   if (control_readint(&spf_action, "control/spfaction") == -1) die_control();
++   x = env_get("SPF_ACTION");
++   if (x) { scan_ulong(x, &u); spf_action = u; }
++ 
++   if (control_readint(&spf_tarpit, "control/spftarpit") == -1) die_control();
++   x = env_get("SPF_TARPIT");
++   if (x) { scan_ulong(x, &u); spf_tarpit = u; }
++ 
++   if (control_readint(&spf_tarpitt, "control/spftarpittime") == -1) die_control();
++   x = env_get("SPF_tarpittIME");
++   if (x) { scan_ulong(x, &u); spf_tarpitt = u; }
++ 
++   if (control_readint(&spf_explain, "control/spfexplainstate") == -1) die_control();
++   x = env_get("SPF_EXPLAIN_STATE");
++   if (x) { scan_ulong(x, &u); spf_explain = u; }
++ 
++   if (control_readint(&spf_trusted, "control/spftrustedstate") == -1) die_control();
++   x = env_get("SPF_TRUSTED_STATE");
++   if (x) { scan_ulong(x, &u); spf_trusted = u; }
++ 
++   if (control_readint(&spf_guess, "control/spfguessstate") == -1) die_control();
++   x = env_get("SPF_GUESS_STATE");
++   if (x) { scan_ulong(x, &u); spf_guess = u; }
++ 
++   if (control_readint(&spf_header, "control/spfheaderstate") == -1) die_control();
++   x = env_get("SPF_HEADER_STATE");
++   if (x) { scan_ulong(x, &u); spf_header = u; }
+   
++   if (control_readint(&spf_debug, "control/spfdebugstate") == -1) die_control();
++   x = env_get("SPF_DEBUG_STATE");
++   if (x) { scan_ulong(x, &u); spf_debug = u; }
++ 
++   /* use SPF_GUESS in the event of none found in file */
++   if (control_rldef(&spf_guess_s, "control/spfbestguess", 0, SPF_GUESS) == -1) die_control();
++   if (!stralloc_0(&spf_guess_s)) die_nomem();
++ 
++   /* use SPF_EXPLAIN in the event of none found in file */
++   if (control_rldef(&spf_expl_s, "control/spfexplanation", 0, SPF_EXPLAIN) == -1) die_control();
++   if (!stralloc_0(&spf_expl_s)) die_nomem();
++   
++   /* use SPF_TRUSTED in the event of none found in file */
++   if (control_rldef(&spf_tf_s, "control/spftrustedforwarder", 0, SPF_TRUSTED) == -1) die_control();
++   if (!stralloc_0(&spf_tf_s)) die_nomem();
++ /* end libspf modification */
++ 
+    if (control_readint(&databytes,"control/databytes") == -1) die_control();
+    x = env_get("DATABYTES");
+    if (x) { scan_ulong(x,&u); databytes = u; }
+    if (!(databytes + 1)) --databytes;
+*************** void setup()
+*** 130,141 ****
+    remotehost = env_get("TCPREMOTEHOST");
+    if (!remotehost) remotehost = "unknown";
+    remoteinfo = env_get("TCPREMOTEINFO");
+    relayclient = env_get("RELAYCLIENT");
+    dohelo(remotehost);
+  }
+  
+- 
+  stralloc addr = {0}; /* will be 0-terminated, if addrparse returns 1 */
+  
+  int addrparse(arg)
+  char *arg;
+--- 213,229 ----
+    remotehost = env_get("TCPREMOTEHOST");
+    if (!remotehost) remotehost = "unknown";
+    remoteinfo = env_get("TCPREMOTEINFO");
+    relayclient = env_get("RELAYCLIENT");
++ 
++ /* start libspf modification */ 
++   if (spf_action < 1) { dohelo(remotehost); return; }  
++   if ((peer_info = SPF_init(local, remoteip, spf_expl_s.s, spf_tf_s.s, 
++     spf_guess_s.s, spf_trusted, spf_guess)) == NULL) { die_spf_nopeer(); }
++ /* end libspf modification */  
+    dohelo(remotehost);
+  }
+  
+  stralloc addr = {0}; /* will be 0-terminated, if addrparse returns 1 */
+  
+  int addrparse(arg)
+  char *arg;
+*************** stralloc rcptto = {0};
+*** 225,252 ****
+  void smtp_helo(arg) char *arg;
+  {
+    smtp_greet("250 "); out("\r\n");
+    seenmail = 0; dohelo(arg);
+  }
+  void smtp_ehlo(arg) char *arg;
+  {
+    smtp_greet("250-"); out("\r\n250-PIPELINING\r\n250 8BITMIME\r\n");
+    seenmail = 0; dohelo(arg);
+  }
+  void smtp_rset(arg) char *arg;
+  {
+    seenmail = 0;
+    out("250 flushed\r\n");
+  }
+  void smtp_mail(arg) char *arg;
+  {
+    if (!addrparse(arg)) { err_syntax(); return; }
+    flagbarf = bmfcheck();
+!   seenmail = 1;
+    if (!stralloc_copys(&rcptto,"")) die_nomem();
+    if (!stralloc_copys(&mailfrom,addr.s)) die_nomem();
+    if (!stralloc_0(&mailfrom)) die_nomem();
+    out("250 ok\r\n");
+  }
+  void smtp_rcpt(arg) char *arg; {
+    if (!seenmail) { err_wantmail(); return; }
+    if (!addrparse(arg)) { err_syntax(); return; }
+--- 313,436 ----
+  void smtp_helo(arg) char *arg;
+  {
+    smtp_greet("250 "); out("\r\n");
+    seenmail = 0; dohelo(arg);
++ 
++ /* start libspf modification */ 
++   if (spf_action < 1) { return; } 
++   if (peer_info == NULL) die_spf_nopeer();
++   SPF_smtp_helo(peer_info, arg);
++ /* end libspf modification */  
++ 
+  }
+  void smtp_ehlo(arg) char *arg;
+  {
+    smtp_greet("250-"); out("\r\n250-PIPELINING\r\n250 8BITMIME\r\n");
+    seenmail = 0; dohelo(arg);
++   
++ /* start libspf modification */
++   if (spf_action < 1) { return; }   
++   if (peer_info == NULL) die_spf_nopeer();
++   SPF_smtp_helo(peer_info, arg);
++ /* end libspf modification */ 
++   
+  }
+  void smtp_rset(arg) char *arg;
+  {
+    seenmail = 0;
+    out("250 flushed\r\n");
+  }
++ void spf_out(SPF_RESULT SPF_RES, char *e, char *r)
++ {
++   if (spf_explain == 1) { out(e); free(e); }
++   out(r);
++   free(r);
++   out("\n");
++   if (spf_tarpit > 0)
++   {
++     switch (SPF_RES)
++     {
++       case SPF_PASS:    break;
++       case SPF_H_FAIL:  if (spf_action > 1) { sleep(spf_tarpitt); }
++       case SPF_S_FAIL:  if (spf_action > 2) { sleep(spf_tarpitt); }
++       case SPF_NEUTRAL: if (spf_action > 3) { sleep(spf_tarpitt); }
++       case SPF_NONE:    if (spf_action > 4) { sleep(spf_tarpitt); }
++       case SPF_ERROR:   if (spf_action > 5) { sleep(spf_tarpitt); }
++       case SPF_UNKNOWN: if (spf_action > 6) { sleep(spf_tarpitt); }
++       case SPF_UNMECH:  break;
++     }
++   }
++   out("554 transaction failed (SPF)\r\n");
++   smtp_quit();
++   return;
++ }
+  void smtp_mail(arg) char *arg;
+  {
++ 
++ /* start libspf modification */
++   SPF_RESULT    SPF_RES;  /* spf result holder */
++   char *spf_r = NULL;     /* spf result response string */
++   char *spf_e = NULL;     /* spf result explanation string */
++ /* end libspf modification */
++ 
+    if (!addrparse(arg)) { err_syntax(); return; }
+    flagbarf = bmfcheck();
+!  
+    if (!stralloc_copys(&rcptto,"")) die_nomem();
+    if (!stralloc_copys(&mailfrom,addr.s)) die_nomem();
+    if (!stralloc_0(&mailfrom)) die_nomem();
++   
++ /* start libspf modification */
++   if (spf_action > 0)
++   {
++     if (spf_action == 0) { seenmail = 1; out("250 ok\r\n"); return; }
++     if (peer_info == NULL)
++     {
++       if ((peer_info = SPF_init(local, remoteip, spf_expl_s.s, spf_tf_s.s,
++         spf_guess_s.s, spf_trusted, spf_guess)) == NULL)
++       {
++         die_spf_nopeer();
++       }
++     }
++ 
++     if (SPF_smtp_from(peer_info, addr.s) == FALSE) { err_syntax(); return; }
++ 
++     SPF_RES = SPF_policy_main(peer_info);
++     if ((spf_r = SPF_result(peer_info)) == NULL) die_nomem();
++     if (spf_explain == 1) { spf_e = SPF_get_explain(peer_info); }
++ 
++     switch (SPF_RES)
++     {
++       case SPF_PASS:
++         break;
++       case SPF_H_FAIL:
++         if (spf_action > 1) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_S_FAIL:
++         if (spf_action > 2) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_NEUTRAL:
++         if (spf_action > 3) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_NONE:
++         if (spf_action > 4) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_ERROR:
++         if (spf_action > 5) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_UNKNOWN:
++         if (spf_action > 6) { spf_out(SPF_RES, spf_e, spf_r); }
++         break;
++       case SPF_UNMECH:
++         break;
++     }
++   } /* if (spf_action > 0){} */
++ 
++   if (spf_explain == 1) { free(spf_e); }
++   free(spf_r);
++   seenmail = 1;
+    out("250 ok\r\n");
++ /* end libspf modification */
+  }
+  void smtp_rcpt(arg) char *arg; {
+    if (!seenmail) { err_wantmail(); return; }
+    if (!addrparse(arg)) { err_syntax(); return; }
+*************** int *hops;
+*** 315,323 ****
+            if (ch != "received"[pos]) if (ch != "RECEIVED"[pos]) flagmaybex = 0;
+          if (flagmaybex) if (pos == 7) ++*hops;
+          if (pos < 2) if (ch != "\r\n"[pos]) flagmaybey = 0;
+          if (flagmaybey) if (pos == 1) flaginheader = 0;
+! 	++pos;
+        }
+        if (ch == '\n') { pos = 0; flagmaybex = flagmaybey = flagmaybez = 1; }
+      }
+      switch(state) {
+--- 499,507 ----
+            if (ch != "received"[pos]) if (ch != "RECEIVED"[pos]) flagmaybex = 0;
+          if (flagmaybex) if (pos == 7) ++*hops;
+          if (pos < 2) if (ch != "\r\n"[pos]) flagmaybey = 0;
+          if (flagmaybey) if (pos == 1) flaginheader = 0;
+!         ++pos;
+        }
+        if (ch == '\n') { pos = 0; flagmaybex = flagmaybey = flagmaybez = 1; }
+      }
+      switch(state) {
+*************** void acceptmessage(qp) unsigned long qp;
+*** 368,385 ****
+  void smtp_data(arg) char *arg; {
+    int hops;
+    unsigned long qp;
+    char *qqx;
+!  
+    if (!seenmail) { err_wantmail(); return; }
+    if (!rcptto.len) { err_wantrcpt(); return; }
+    seenmail = 0;
+    if (databytes) bytestooverflow = databytes + 1;
+    if (qmail_open(&qqt) == -1) { err_qqt(); return; }
+    qp = qmail_qp(&qqt);
+    out("354 go ahead\r\n");
+!  
+    received(&qqt,"SMTP",local,remoteip,remotehost,remoteinfo,fakehelo);
+    blast(&hops);
+    hops = (hops >= MAXHOPS);
+    if (hops) qmail_fail(&qqt);
+    qmail_from(&qqt,mailfrom.s);
+--- 552,590 ----
+  void smtp_data(arg) char *arg; {
+    int hops;
+    unsigned long qp;
+    char *qqx;
+!   
+! /* start libspf modification */
+!   char *spf_hdr = NULL;
+! /* end libspf modification */
+!   
+    if (!seenmail) { err_wantmail(); return; }
+    if (!rcptto.len) { err_wantrcpt(); return; }
+    seenmail = 0;
++ 
++ /* start libspf modification */
++   if (spf_action > 0) { if (peer_info == NULL) die_spf_nopeer(); }
++ /* end libspf modification */
++ 
+    if (databytes) bytestooverflow = databytes + 1;
+    if (qmail_open(&qqt) == -1) { err_qqt(); return; }
+    qp = qmail_qp(&qqt);
+    out("354 go ahead\r\n");
+! 
+    received(&qqt,"SMTP",local,remoteip,remotehost,remoteinfo,fakehelo);
++   
++ /* start libspf modification */
++   if (spf_action > 0 && spf_header == 1)
++   {
++     if ((spf_hdr = SPF_build_header(peer_info)) != NULL)
++     {
++       qmail_put(&qqt, spf_hdr, strlen(spf_hdr));
++       free(spf_hdr);
++     }
++   }
++ /* end libspf modification */
++   
+    blast(&hops);
+    hops = (hops >= MAXHOPS);
+    if (hops) qmail_fail(&qqt);
+    qmail_from(&qqt,mailfrom.s);
+*************** void main()
+*** 414,421 ****
+    if (chdir(auto_qmail) == -1) die_control();
+    setup();
+    if (ipme_init() != 1) die_ipme();
+    smtp_greet("220 ");
+!   out(" ESMTP\r\n");
+    if (commands(&ssin,&smtpcommands) == 0) die_read();
+    die_nomem();
+  }
+--- 619,626 ----
+    if (chdir(auto_qmail) == -1) die_control();
+    setup();
+    if (ipme_init() != 1) die_ipme();
+    smtp_greet("220 ");
+!   out(" ESMTP SPF1\r\n");
+    if (commands(&ssin,&smtpcommands) == 0) die_read();
+    die_nomem();
+  }
+*** netqmail-1.05/qmail-showctl.c	Mon Jun 15 03:53:16 1998
+--- netqmail-1.05.spf/qmail-showctl.c	Thu Aug  5 08:26:21 2004
+***************
+*** 15,22 ****
+--- 15,26 ----
+  #include "auto_patrn.h"
+  #include "auto_spawn.h"
+  #include "auto_split.h"
+  
++ /* start libspf modification */
++ #include "spf.h"
++ /* end libspf modification */
++ 
+  stralloc me = {0};
+  int meok;
+  
+  stralloc line = {0};
+*************** void main()
+*** 256,271 ****
+--- 260,301 ----
+          substdio_puts(subfdout,"Modified recently enough; hopefully up to date.\n");
+  
+    do_str("smtpgreeting",1,"smtpgreeting","SMTP greeting: 220 ");
+    do_lst("smtproutes","No artificial SMTP routes.","SMTP route: ","");
++   /* start libspf modification */
++   do_int("spftarpit",0,"","SPF tarpit state: ","");
++   do_int("spftarpittime",0,"","SPF tarpit timeout: ","");
++   do_int("spfaction",0,"SPF action state: ","");
++   do_int("spfexplainstate",0,"SPF explanation state: ","");
++   do_int("spftrustedstate",0,"SPF trusted state: ","");
++   do_int("spfguessstate",0,"SPF best guess state: ","");
++   do_int("spfheaderstate",0,"SPF Received-SPF header state: ","");
++   do_int("spfdebugstate",0,"SPF Debug state: ","");
++   do_str("spfbestguess",0,SPF_GUESS,"SPF best guess language: ");
++   do_str("spfexplanation",0,SPF_EXPLAIN,"SPF explanation language: ");
++   do_str("spftrustedforwarder",0,SPF_TRUSTED,"SPF Trusted Forwarder language: ");
++   /* end libspf modification */
+    do_int("timeoutconnect","60","SMTP client connection timeout is "," seconds");
+    do_int("timeoutremote","1200","SMTP client data timeout is "," seconds");
+    do_int("timeoutsmtpd","1200","SMTP server data timeout is "," seconds");
+    do_lst("virtualdomains","No virtual domains.","Virtual domain: ","");
+  
+    while (d = readdir(dir)) {
+      if (str_equal(d->d_name,".")) continue;
+      if (str_equal(d->d_name,"..")) continue;
++     /* start libspf modification */
++     if (str_equal(d->d_name,"spftarpit")) continue;
++     if (str_equal(d->d_name,"spftarpittime")) continue;
++     if (str_equal(d->d_name,"spfaction")) continue;
++     if (str_equal(d->d_name,"spftrustedstate")) continue;    
++     if (str_equal(d->d_name,"spfexplainstate")) continue;    
++     if (str_equal(d->d_name,"spfguessstate")) continue;    
++     if (str_equal(d->d_name,"spfheaderstate")) continue;    
++     if (str_equal(d->d_name,"spfdebugstate")) continue;
++     if (str_equal(d->d_name,"spfbestguess")) continue;    
++     if (str_equal(d->d_name,"spfexplanation")) continue;    
++     if (str_equal(d->d_name,"spftrustedforwarder")) continue;
++     /* end libspf modification */   
+      if (str_equal(d->d_name,"bouncefrom")) continue;
+      if (str_equal(d->d_name,"bouncehost")) continue;
+      if (str_equal(d->d_name,"badmailfrom")) continue;
+      if (str_equal(d->d_name,"bouncefrom")) continue;
+*** netqmail-1.05/Makefile	Fri Aug  6 17:05:47 2004
+--- netqmail-1.05.spf/Makefile	Thu Aug  5 08:43:44 2004
+*************** fs.a auto_qmail.o socket.lib
+*** 1540,1549 ****
+  	./load qmail-smtpd rcpthosts.o commands.o timeoutread.o \
+  	timeoutwrite.o ip.o ipme.o ipalloc.o control.o constmap.o \
+  	received.o date822fmt.o now.o qmail.o cdb.a fd.a wait.a \
+  	datetime.a getln.a open.a sig.a case.a env.a stralloc.a \
+! 	alloc.a substdio.a error.a str.a fs.a auto_qmail.o  `cat \
+! 	socket.lib`
+  
+  qmail-smtpd.0: \
+  qmail-smtpd.8
+  	nroff -man qmail-smtpd.8 > qmail-smtpd.0
+--- 1540,1549 ----
+  	./load qmail-smtpd rcpthosts.o commands.o timeoutread.o \
+  	timeoutwrite.o ip.o ipme.o ipalloc.o control.o constmap.o \
+  	received.o date822fmt.o now.o qmail.o cdb.a fd.a wait.a \
+  	datetime.a getln.a open.a sig.a case.a env.a stralloc.a \
+! 	alloc.a substdio.a error.a str.a fs.a auto_qmail.o -lspf \
+! 	`cat socket.lib`
+  
+  qmail-smtpd.0: \
+  qmail-smtpd.8
+  	nroff -man qmail-smtpd.8 > qmail-smtpd.0
+*************** qmail-smtpd.o: \
+*** 1552,1560 ****
+  compile qmail-smtpd.c sig.h readwrite.h stralloc.h gen_alloc.h \
+  substdio.h alloc.h auto_qmail.h control.h received.h constmap.h \
+  error.h ipme.h ip.h ipalloc.h ip.h gen_alloc.h ip.h qmail.h \
+  substdio.h str.h fmt.h scan.h byte.h case.h env.h now.h datetime.h \
+! exit.h rcpthosts.h timeoutread.h timeoutwrite.h commands.h
+  	./compile qmail-smtpd.c
+  
+  qmail-start: \
+  load qmail-start.o prot.o fd.a auto_uids.o
+--- 1552,1560 ----
+  compile qmail-smtpd.c sig.h readwrite.h stralloc.h gen_alloc.h \
+  substdio.h alloc.h auto_qmail.h control.h received.h constmap.h \
+  error.h ipme.h ip.h ipalloc.h ip.h gen_alloc.h ip.h qmail.h \
+  substdio.h str.h fmt.h scan.h byte.h case.h env.h now.h datetime.h \
+! exit.h rcpthosts.h timeoutread.h timeoutwrite.h commands.h spf.h
+  	./compile qmail-smtpd.c
+  
+  qmail-start: \
+  load qmail-start.o prot.o fd.a auto_uids.o
+*** netqmail-1.05/spf.h	Wed Dec 31 16:00:00 1969
+--- netqmail-1.05.spf/spf.h	Thu Aug  5 08:25:27 2004
+***************
+*** 0 ****
+--- 1,371 ----
++ /* libspf - Sender Permitted From library
++ *	
++ *  ANSI C implementation of draft-mengwong-spf-02.9.7.txt
++ *
++ *  Author: James Couzens <jcouzens@obscurity.org>
++ *  Author: Sean Comeau <scomeau@obscurity.org>
++ *
++ *  FILE: spf.h
++ *  DESC: main library header file 
++ *
++ *  License:
++ *
++ *  The libspf Software License, Version 1.0
++ *
++ *  Copyright (c) 2004 James Couzens & Sean Comeau  All rights
++ *  reserved.
++ *
++ *  Redistribution and use in source and binary forms, with or without
++ *  modification, are permitted provided that the following conditions
++ *  are met:
++ *
++ *  1. Redistributions of source code must retain the above copyright
++ *     notice, this list of conditions and the following disclaimer.
++ *
++ *  2. Redistributions in binary form must reproduce the above copyright
++ *     notice, this list of conditions and the following disclaimer in
++ *     the documentation and/or other materials provided with the
++ *     distribution.
++ *
++ *  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
++ *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
++ *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ *  DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
++ *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
++ *  USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++ *  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
++ *  OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ *  SUCH DAMAGE.
++ * 
++ */
++ 
++ 
++ #ifndef	_SPF_H
++ #define	_SPF_H 1
++ 
++ #include <sys/types.h>    /* typedefs */
++ #include <arpa/inet.h>    /* in_addr struct */
++ 
++ __BEGIN_DECLS
++ 
++ /* spf protocol version we support */
++ #define SPF_VERSION 1
++ 
++ /*
++ *  For reference purposes commented out are the constants based on 
++ *  RFC 883, RFC 1034, RFC 1035.  Because we're working with IN_TXT
++ *  records we will use a larger packet size at 65536 bytes which 
++ *  is likey to cover most circumstances.
++ *
++ *  #define PACKETSZ  512   max response packet size
++ *  #define MAXDNAME  1025  max uncompressed IN_TXT record 
++ *  #define MAXCDNAME 255   max compressed IN_TXT record
++ *
++ */
++ 
++ #define MAX_DEBUG_LEN 1024
++ 
++ #define MAX_MACRO_LEN 1024  /* max length of an expanded macro */
++ #define MAX_PLEN      1024  /* buffer to make UTIL_printf thread safe */
++ #define LOCAL_PART    256   /* local-part, text before @ in email addy */
++ #define ENV_SENDER    512   /* entire FROM: string passed by MTA */
++ #define CUR_DOM       256   /* text after @ in email addy for cur query */
++ #define UTC_TIME      22    /* time since epoch */
++ #define IP_ADDR       17    /* ip of remote peer - DON'T CHANGE FROM 17!! */
++ #define IP_VER        8     /* ip protocol version */
++ #define ENV_HELO      512   /* entire HELO string passed by MTA */
++ 
++ #define MAX_HNAME     256   /* hostname of MTA */
++ #define MAX_RESULT    64    /* human readable SPF result */
++ #define MAX_ERROR     96    /* human readable error reason */
++ #define EXPLAIN_S     256   /* change to EXPLAIN when cleaning up */
++ #define ENV_RECV      512   /* Received-SPF: header string */
++ #define MAX_RES_STR   12    /* maximum legnth of a res str eg: "pass" */
++ 
++ #define MAX_MECHANISM 256   /* maximum length of a mechanism */
++ #define MAX_HEADER    512   /* maximum length of header for prepend */
++ #define MAX_SMTP_RES  256   /* maximum length of smtp resonse string */
++ 
++ /* human readable string equivalents of spf responses */
++ #define HR_PASS     "pass"
++ #define HR_NONE     "none"
++ #define HR_S_FAIL   "softfail"
++ #define HR_H_FAIL   "fail"
++ #define HR_ERROR    "error"
++ #define HR_NEUTRAL  "neutral"
++ #define HR_UNKNOWN  "unknown"
++ #define HR_UNMECH   "unknown mechanism"
++ 
++ /* default explanation */
++ #define SPF_EXPLAIN "See http://spf.pobox.com/why.html?sender=%{S}&"      \
++                     "ip=%{I}&receiver=%{xR}"
++ 
++ /* default best guess */
++ #define SPF_GUESS   "v=spf1 a/24 mx/24 ptr "
++ 
++ /* trusted forwarder */
++ #define SPF_TRUSTED "v=spf1 include:spf.trusted-forwarder.org "
++ 
++ /* SPF_BOOL
++ *
++ *  Our own internal boolean enumeration, simple true or false.
++ *
++ */
++ typedef enum SPF_BOOL
++ {
++   FALSE = 0,
++   TRUE
++ } SPF_BOOL;
++ 
++ 
++ /* SPF_RESULT
++ *
++ *  Error codes representing the result of an SPF policy examination
++ *
++ *  sucessful parse (some match was made) (+all)
++ *  not participating (no SPF/TXT records)
++ *  ~all 
++ *  failed parse (no match made) (-all)
++ *  dns problem / error
++ *  ?all 
++ *  permanent parsing error during record examination
++ *
++ */
++ typedef enum SPF_RESULT
++ {
++   SPF_PASS = 0,     /* + */
++   SPF_NONE,       
++   SPF_S_FAIL,       /* ~ */
++   SPF_H_FAIL,       /* - */
++   SPF_ERROR,
++   SPF_NEUTRAL,      /* ? */
++   SPF_UNKNOWN,
++   SPF_UNMECH        /* unknown mechanism */
++ } SPF_RESULT;
++ 
++ 
++ /* SPF_ACTION
++ *
++ *  Error codes representing the the action to be taken as a result 
++ *  of the response the library was able to obtain whilst trying to
++ *  obtain or examin an SPF policy
++ *
++ */
++ typedef enum SPF_ACTION
++ {
++   DEFER = 0,
++   TARPIT,
++   ALLOW,
++   REJECT
++ } SPF_ACTION;
++ 
++ 
++ /* SPF_MECHANISM
++ *
++ *  Error codes representing the various mechanism types employed
++ *  as defined in the RFC
++ *
++ */
++ typedef enum SPF_MECHANISM
++ {
++   NO_POLICY = 0,
++   VERSION,
++   ALL,
++   INCLUDE,
++   A,
++   MX,
++   PTR,
++   IP4,
++   IP6,
++   EXISTS,
++   REDIRECT,
++   EXPLAIN,
++   DEFAULT, /* this is OLD school for early adopters = ~,?,+,- */
++   UNMECH
++ } SPF_MECHANISM;
++ 
++ 
++ typedef struct spf_result_t
++ {
++   size_t                  sl;      /* spf result string length */
++   char                    s[32];   /* spf result type string */
++   SPF_RESULT              i;       /* spf result type */
++   size_t                  hl;      /* length of header string */
++   char                    h[512];  /* Received-SPF: header string */
++   char                    p;       /* prefix identifier */
++ } spf_result_t;
++ 
++ 
++ /* policy_addr_t
++ * 
++ *  Storage container used to store parsed out ip addresses in their
++ *  binary format (in_addr struct) and an unsigned integer containing
++ *  the netmask
++ *
++ */
++ typedef struct policy_addr_s
++ {
++   struct in_addr    addr;     /* in_addr struct (unsigned long) */
++   int8_t            cidr;     /* address cidr length */
++   SPF_RESULT        prefix;   /* spf prefix (-,+,~,?) */  
++ } policy_addr_t;
++ 
++ 
++ /* spf_config_t
++ *
++ * Global config structure
++ *
++ */
++ typedef struct spf_config_s
++ {
++   int               level;          /* w:  */
++ } spf_config_t;
++ 
++ 
++ /* split_str_node_t
++ *
++ *  This structure is used to store where the head and tail are when 
++ *  creating a list of split_str_node_t structures.
++ *
++ */
++ typedef struct strbuf_node_s
++ {
++   size_t                 len;    /* length of string */
++ 	char                   *s;     /* expanded string macro */
++ 	struct strbuf_node_s   *next;  /* pointer to next node */
++ } strbuf_node_t;
++ 
++ 
++ /* strbuf_t
++ *
++ *  This structure is used exclusively by marco.c functions and is used
++ *  to store macros during parsing.
++ *
++ */
++ typedef struct strbuf_s
++ {
++ 	strbuf_node_t   *head;      /* head node */
++   u_int8_t        elements;   /* number of nodes in list */
++ } strbuf_t;
++ 
++ 
++ /* split_str_node_t
++ *
++ *  This structure is used to store where the head and tail are when 
++ *  creating a list of split_str_node_t structures.
++ *
++ */
++ typedef struct split_str_node_s
++ {
++   size_t                   len;    /* length of string */
++   char                     *s;     /* expanded string macro */
++   struct split_str_node_s  *next;  /* pointer to next node */
++ } split_str_node_t;
++ 
++ 
++ /* split_str_t
++ *
++ *  This structure is used exclusively by the UTIL_reverse function and is
++ *  used to reverse a string using a semi-arbitrary delimiter (see 
++ *  UTIL_is_spf_delim for valid delimiters, or the SPF RFC)
++ */
++ typedef struct split_str_s
++ {
++ 	split_str_node_t  *head;      /* head node */
++   split_str_node_t  *tail;      /* tail node */
++ 	int               elements;   /* number of nodes in list */
++ } split_str_t;
++ 
++ 
++ /* peer_info_t
++ * 
++ *  Used to store information about the connected peer.  Only one of
++ *  SMTP protocol specific three strings will be necessarily be 
++ *  populated in the following order of precedence: FROM, EHLO, HELO.
++ *
++ *  The ip_ver string will contain 'in-addr' if the connecting peer
++ *  is using IPv4, or 'ip6' if the connect
++ *
++ *  Various political and technical pressures have recently led to 
++ *  the deprecation of the IP6.INT name space in favour of IP6.ARPA. 
++ *  This makes IPv6 PTR data management difficult, since interim 
++ *  clients will search IP6.INT while standard clients will search 
++ *  IP6.ARPA. We present a simple method based on DNAME RR's 
++ *  (see [RFC2672]) and ISC BIND9 whereby zone information can be 
++ *  managed in a single location and then made visible in two 
++ *  namespaces.  (http://www.isc.org/tn/isc-tn-2002-1.html)
++ *
++ *  RFC 937 (POP) states: The maximum length of a command line is 512 
++ *  characters (including the command word and the CRLF).
++ *  POLICY_MATCH = TRUE
++ *
++ *  Note: from can be removed and just work on local_part@cur_dom 
++ *
++ */
++ typedef struct peer_info_s
++ {
++   u_int8_t        use_trust;        /* if 1 then enabled trustedfwder */
++   u_int8_t        use_guess;        /* if 1 then enabled best guess */
++   
++   spf_result_t    *spf_result;      /* table of str, see spf_result_t */
++   SPF_RESULT      RES;              /* SPF error codes for result */
++   SPF_RESULT      RES_P;            /* prefix behaviour */
++   char            *rs;              /* ptr str result of SPF query */
++   
++   SPF_BOOL        ALL;              /* Was all mechanism parsed */
++   char            *p;               /* prefix from all mechanism */
++   
++   u_int8_t        spf_ver;          /* version of SPF */ 
++     
++   char            *helo;            /* HELO string */
++   char            *ehlo;            /* pointer to HELO string */
++   char            *from;            /* FROM string */
++    
++   char            *explain;         /* Result of an explain query */
++   char            *guess;           /* Query if result is TF fails */
++   char            *trusted;         /* Query if primary result is none */
++   char            *ptr_mhost;       /* validate against during ptr mech */
++   char            *cur_dom;         /* @domain of the current query */
++   char            *cur_eaddr;       /* current email address, updated during
++                                      * to be accurate during INCLUDE and
++                                      * REDIRECT mechanisms
++                                      */
++   char            *mta_hname;       /* ptr to MTA hname eg: mail.foo.org */
++ 
++   char            ip_ver[IP_VER];   /* IP Protocol Version */
++   struct in_addr  addr;             /* IP of the remote host (peer) */
++   char            *r_ip;            /* pointer to remote ip from MTA */
++   char            *r_vhname;        /* validated hostname of remotehost */
++   
++   char local_part[LOCAL_PART];      /* local part of address (user) */
++   char utc_time[UTC_TIME];          /* The number of seconds since the Epoch */
++   char last_m[MAX_MECHANISM];       /* last mechanism parsed */
++   char error[MAX_ERROR];            /* error (if any) that caused failure */
++   
++ } peer_info_t;
++ 
++ extern spf_config_t   confg;
++ extern u_int8_t       spf_rlevel;
++ 
++ /*  Main library functions (spf.c) */
++ extern void         SPF_dbg_level(int level);
++ extern peer_info_t  *SPF_init(const char *local, const char *rip, const char *expl,
++                       const char *tf, const char *guess, u_int32_t use_trust, 
++                       u_int32_t use_guess);
++ extern peer_info_t  *SPF_close(peer_info_t *peer_info);
++ extern SPF_RESULT   SPF_policy_main(peer_info_t *peer_info);
++ extern SPF_BOOL     SPF_parse_policy(peer_info_t *peer_info, const char *policy);
++ extern char         *SPF_result(peer_info_t *peer_info);
++ extern SPF_BOOL     SPF_smtp_from(peer_info_t *peer_info, const char *s);
++ extern SPF_BOOL     SPF_smtp_helo(peer_info_t *peer_info, const char *s);
++ 
++ /* Functions that alter headers (header.c) */
++ extern char         *SPF_build_header(peer_info_t *peer_info);
++ extern char         *SPF_get_explain(peer_info_t *peer_info);
++ 
++ __END_DECLS
++ 
++ #endif /* spf.h */

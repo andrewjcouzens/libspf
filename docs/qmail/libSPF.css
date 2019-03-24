@@ -1,0 +1,74 @@
+/* libSPF.css
+*
+*  Author:   James Couzens <jcouzens@codeshare.ca>
+*  Date:     July 2, 2004
+*  Updated:  August 3, 2004 - Modified URL tags
+*  
+*  Info:     CSS for libSPF Documentation
+*
+*/
+
+A:link
+{
+  text-decoration:  underline;
+  color:            #336699;
+} 
+                   
+A:visited
+{
+  text-decoration:  underline;
+  color:            #336699;
+}   
+                    
+A:active
+{
+  text-decoration:  underline;
+  color:            #336699;
+}
+           
+A:hover
+{
+  text-decoration:  none;
+  color:            #336699;
+}
+
+body
+{
+  font-face:        Verdana, Arial, Sans-serif;
+  font-size:        10px;
+  color:            #000000;
+}
+
+td
+{
+  font-face:        vardana;
+  font-size:        10px;
+  color:            #000000;
+  background-color: #FFFFFF;
+}
+
+td.out
+{
+  font-face:        Verdana, Arial, Sans-serif;
+  font-size:        10px;
+  color:            #000000;
+  background-color: #000000;
+}
+
+td.hdr
+{
+  font-face:        Verdana, Arial, Sans-serif;
+  font-size:        11px;
+  color:            #000000;
+  font-weight:      bold; 
+  background-color: #CCCCCC;
+}
+
+td.example
+{
+  font-face:        Verdana, Arial, Sans-serif;
+  font-size:        10px;
+  color:            #FFFFFF;
+  font-weight:      bold;
+  background-color: #B53333;
+}

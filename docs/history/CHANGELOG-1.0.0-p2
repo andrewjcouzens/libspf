@@ -1,0 +1,78 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for v1.0.0 PRE 2 (final testing) 
+
+
+1.0p2 --
+
+ Fixed:
+ ------
+ - OpenBSD 3.5 compiles and links without complaining but the system I tested
+   on didn't have a shared resolv library so I could only test static
+ - FreeBSD 4.11 compiles and links without whining about pthreads.  What 
+   wonderfully stupid logic employed through the use of -pthread instead of
+   -lpthread like EVERYONE ELSE.
+ - Output from 'make test' showed calls to 'spfqtool' on the command line,
+   however this was not really the case, 'spfqtool_static' was indeed being
+   called, this has been fixed.
+ - AutoConf option '--enable-res_seach' was defaulted to true although the
+   documentation indicated the default was false.  This has been corrected.
+
+ Removed:
+ --------
+ - (Commented out for now), the OLD standard integer type checks in autoconf 
+
+ Changed:
+ --------
+ - Rewrote the handling of the 'MAIL FROM:' address in SPF_smtp_from.  The
+   way it was written was ambiguous and priror to the quick fix I applied in
+   p1 would leak 1 byte of memory under cirtain circumstances.  A permanent
+   and improved section of code is now in place.
+
+ Improved/Updated:
+ -----------------
+ - replaced utilities in the 'build_tools' directory with versions from
+   automake-1.6 from automake-1.9
+ - added better mechanism for handling the various stupidity associated
+   with the way various OSes declare their standard types in configure.in
+   configure.in
+ - GCC version detection thus enabling GCC optimizations for those 
+   versions where it is appropriate.
+ 
+ New:
+ ----
+ - For OSes without "stdint.h" (you know who you are) a local file called
+   '_stdint.h' is created and placed within src/libspf/ and is 
+   referenced by main.h and included if necessary.  What now happens is
+   the system is checked for stdint.h in the system path and if its not
+   around checks are made to see which types the system is aware of, any
+   that are not, are defined within _stdint.h and are then subsequently
+   included within libSPF.  The generated header file will be installed
+   to /usr/local/include/_stdint.h  THIS IS NOT PERMANENTLY SO!  If
+   this is WRONG let me know, and I'll change the behaviour, but for the
+   record I'm stick and tired for the stupid BSD's being non GNU 
+   friendly.  And furthermore, a thousand curses upon the house of 
+   FreeBSD for stupidity such as '-pthread' at linktime instead of
+   '-lpthread'.  I don't give a flying fuck what the reason is, its 
+   STUPID.  I can only hope that this is fixed in 5.0
+
+ libSPF Query Tool (src/spfqtool) changes:
+ -----------------------------------------
+ - links against libspf.a/libspf.so properly on FreeBSD now. 
+
+ spfmilter (src/spfmilter) changes:
+ ----------------------------------
+ - N/A 
+
+EOF

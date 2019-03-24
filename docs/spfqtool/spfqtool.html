@@ -1,0 +1,347 @@
+<html>
+<head>
+  <title>spfqtool.c</title>
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#444444">/* libspf - Sender Policy Framework library
+*
+*  ANSI C implementation of spf-draft-200405.txt
+*
+*  Author: James Couzens &lt;jcouzens@codeshare.ca&gt;
+*
+*  File:   spfqtool.c
+*  Desc:   SPF Query Tool (an example implementation of libSPF)
+*
+*  License:
+*
+*  The libspf Software License, Version 1.0
+*
+*  Copyright (c) 2004 James Couzens &amp; Sean Comeau  All rights
+*  reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*  1. Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*
+*  2. Redistributions in binary form must reproduce the above copyright
+*     notice, this list of conditions and the following disclaimer in
+*     the documentation and/or other materials provided with the
+*     distribution.
+*
+*  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+*  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+*  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+*  DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS MAKING USE OF THIS LICESEN
+*  OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+*  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+*  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+*  USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+*  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+*  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+*  OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+*  SUCH DAMAGE.
+*
+*/</font>
+
+<font color="0000ff"><strong>#include <font color="#008000">&quot;<a href=spfqtool.h target=_blank>spfqtool.h</a>&quot;</font></strong></font>
+
+
+<font color="#444444">/* SPF_usage
+*
+*  Author: James Couzens &lt;jcouzens@6o4.ca&gt;
+*
+*  Date:   07/04/04
+*  Date:   07/28/04 - Renamed to spfqtool
+*  Date:   09/08/04 - Added SPF_build_header call
+*
+*  Desc:
+*         Main function, allocates memory and makes calls to the libSPF 
+*  library which parses the &quot;fake&quot; query.
+*
+*/</font>
+<strong>int</strong> <font color="#2040a0">main</font><font color="4444FF">(</font><strong>int</strong> <font color="#2040a0">argc</font>, <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">argv</font><font color="4444FF">[</font><font color="4444FF">]</font><font color="4444FF">)</font>
+<font color="4444FF"><strong>{</strong></font>
+  <font color="#2040a0">u_int8_t</font> <font color="#2040a0">i</font> <font color="4444FF">=</font> <font color="#FF0000">0</font><font color="4444FF">;</font>                      <font color="#444444">/* utility */</font>
+  
+  <font color="#2040a0">SPF_RESULT</font> <font color="#2040a0">res</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_UNKNOWN</font><font color="4444FF">;</font>        <font color="#444444">/* libSPF result code */</font>
+
+  <font color="#2040a0">SPF_BOOL</font> <font color="#2040a0">use_explain</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_FALSE</font><font color="4444FF">;</font>    <font color="#444444">/* T / F provide SPF Explanation */</font>
+  <font color="#2040a0">SPF_BOOL</font> <font color="#2040a0">use_trusted</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_FALSE</font><font color="4444FF">;</font>    <font color="#444444">/* T / F attempt Trusted Forwarder */</font>
+  <font color="#2040a0">SPF_BOOL</font> <font color="#2040a0">use_guess</font>   <font color="4444FF">=</font> <font color="#2040a0">SPF_FALSE</font><font color="4444FF">;</font>    <font color="#444444">/* T / F attempt Best Guess */</font>
+  <font color="#2040a0">SPF_BOOL</font> <font color="#2040a0">test_mode</font>   <font color="4444FF">=</font> <font color="#2040a0">SPF_FALSE</font><font color="4444FF">;</font>    <font color="#444444">/* T / F enable test mode */</font>
+
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">margv</font>   <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* pointer to current argv element */</font>
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">ip</font>      <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* ip address to test connecting from */</font>
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">address</font> <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* email address to test sending from */</font>
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">helo</font>    <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* helo hostname to test sending from */</font>
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">tmp</font>     <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* utility pointer */</font>
+  <strong>char</strong> <font color="4444FF">*</font><font color="#2040a0">buf</font>     <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>                <font color="#444444">/* buffer to store generated SPF header */</font>
+   
+  <font color="#2040a0">peer_info_t</font> <font color="4444FF">*</font><font color="#2040a0">pinfo</font> <font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">;</font>           <font color="#444444">/* libSPF peer_info structure */</font>
+
+  <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">argc</font> <font color="4444FF">&lt;</font><font color="4444FF">=</font> <font color="#FF0000">1</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">SPF_usage</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <strong>return</strong><font color="4444FF">(</font><font color="#2040a0">SPF_FALSE</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>
+
+  <strong>for</strong> <font color="4444FF">(</font><font color="#2040a0">i</font> <font color="4444FF">=</font> <font color="#FF0000">1</font><font color="4444FF">;</font> <font color="#2040a0">i</font> <font color="4444FF">&lt;</font> <font color="#2040a0">argc</font><font color="4444FF">;</font> <font color="#2040a0">i</font><font color="4444FF">+</font><font color="4444FF">+</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">tmp</font> <font color="4444FF">=</font> <font color="#2040a0">argv</font><font color="4444FF">[</font><font color="#2040a0">i</font><font color="4444FF">]</font><font color="4444FF">;</font>
+
+    <strong>if</strong> <font color="4444FF">(</font><font color="4444FF">*</font><font color="#2040a0">tmp</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#008000">'-'</font><font color="4444FF">)</font>
+    <font color="4444FF"><strong>{</strong></font>
+      <font color="#2040a0">margv</font> <font color="4444FF">=</font> <font color="4444FF">(</font><font color="#2040a0">tmp</font> <font color="4444FF">+</font> <font color="#FF0000">3</font><font color="4444FF">)</font><font color="4444FF">;</font>
+      
+      <strong>switch</strong> <font color="4444FF">(</font><font color="4444FF">*</font><font color="4444FF">(</font><font color="#2040a0">tmp</font> <font color="4444FF">+</font> <font color="#FF0000">1</font><font color="4444FF">)</font><font color="4444FF">)</font>
+      <font color="4444FF"><strong>{</strong></font>
+        <font color="#444444">/* best guess */</font>
+        <strong>case</strong> <font color="#008000">'b'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">use_guess</font> <font color="4444FF">=</font> <font color="#2040a0">atoi</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'b' */</font>
+
+        <font color="#444444">/* debug */</font>
+        <strong>case</strong> <font color="#008000">'d'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">confg</font>.<font color="#2040a0">level</font> <font color="4444FF">=</font> <font color="#2040a0">atoi</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'd' */</font>
+
+        <font color="#444444">/* explanation */</font>
+        <strong>case</strong> <font color="#008000">'e'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">use_explain</font> <font color="4444FF">=</font> <font color="#2040a0">atoi</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'e' */</font>
+
+        <font color="#444444">/* RFC2821 HELO */</font>
+        <strong>case</strong> <font color="#008000">'h'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">helo</font>  <font color="4444FF">=</font> <font color="#2040a0">strdup</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'h' */</font>
+
+        <font color="#444444">/* ip address */</font>
+        <strong>case</strong> <font color="#008000">'i'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">ip</font>  <font color="4444FF">=</font> <font color="#2040a0">strdup</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'i' */</font>
+
+        <font color="#444444">/* source email address */</font>
+        <strong>case</strong> <font color="#008000">'s'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">address</font> <font color="4444FF">=</font> <font color="#2040a0">strdup</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 's' */</font>
+
+        <font color="#444444">/* trusted forwarder */</font>
+        <strong>case</strong> <font color="#008000">'t'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">use_trusted</font> <font color="4444FF">=</font> <font color="#2040a0">atoi</font><font color="4444FF">(</font><font color="#2040a0">margv</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 't' */</font>
+
+        <font color="#444444">/* version */</font>
+        <strong>case</strong> <font color="#008000">'v'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;SPF Query Tool v%s - James Couzens &lt;jcouzens@codeshare.ca&gt;<font color="#77dd77">\n</font><font color="#77dd77">\n</font>&quot;</font>, 
+            <font color="#2040a0">SPFQTOOL_VERSION</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+          <strong>return</strong><font color="4444FF">(</font><font color="#FF0000">0</font><font color="4444FF">)</font><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'v' */</font>
+
+        <font color="#444444">/* test mode */</font>
+        <strong>case</strong> <font color="#008000">'z'</font> <font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <font color="#2040a0">test_mode</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">;</font>
+
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* 'z' */</font>
+
+        <strong>default</strong><font color="4444FF">:</font>
+        <font color="4444FF"><strong>{</strong></font>
+          <strong>break</strong><font color="4444FF">;</font>
+        <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* default */</font>
+      <font color="4444FF"><strong>}</strong></font>
+    <font color="4444FF"><strong>}</strong></font>
+  <font color="4444FF"><strong>}</strong></font> <font color="#444444">/* for */</font>
+ 
+  <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">ip</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;You need to specify an IP Address to test against<font color="#77dd77">\n</font><font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">SPF_usage</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">address</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <strong>return</strong><font color="4444FF">(</font><font color="#2040a0">SPF_FALSE</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>
+  <strong>else</strong> <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">address</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;You need to specify a from email address<font color="#77dd77">\n</font><font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    
+    <font color="#2040a0">SPF_usage</font><font color="4444FF">(</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">ip</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <strong>return</strong><font color="4444FF">(</font><font color="#2040a0">SPF_FALSE</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>
+  <strong>else</strong> <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">helo</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">helo</font> <font color="4444FF">=</font> <font color="#2040a0">strdup</font><font color="4444FF">(</font><font color="#2040a0">HELO_HOST</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;You didn't give me a helo host, using (%s)<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">helo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>
+
+  <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">confg</font>.<font color="#2040a0">level</font> <font color="4444FF">&gt;</font><font color="4444FF">=</font> <font color="#FF0000">1</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;SPF Query Tool v%s - James Couzens &lt;jcouzens@codeshare.ca&gt;<font color="#77dd77">\n</font>&quot;</font>, 
+      <font color="#2040a0">SPFQTOOL_VERSION</font><font color="4444FF">)</font><font color="4444FF">;</font>
+   
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: Debugging level:    %u<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">confg</font>.<font color="#2040a0">level</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: RFC2821 Mail From:  %s<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">address</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: RFC2821 HELO:       %s<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">helo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: Purported address:  %s<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">ip</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: SPF Explanation:    %s<font color="#77dd77">\n</font>&quot;</font>,
+      <font color="#2040a0">use_explain</font> ? <font color="#008000">&quot;Enabled&quot;</font> <font color="4444FF">:</font> <font color="#008000">&quot;Disabled&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: Trusted Forwarder:  %s<font color="#77dd77">\n</font>&quot;</font>,
+      <font color="#2040a0">use_trusted</font> ? <font color="#008000">&quot;Enabled&quot;</font> <font color="4444FF">:</font> <font color="#008000">&quot;Disabled&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;[DEBUG]: Best Guess:         %s<font color="#77dd77">\n</font>&quot;</font>,
+      <font color="#2040a0">use_guess</font> ? <font color="#008000">&quot;Enabled&quot;</font> <font color="4444FF">:</font> <font color="#008000">&quot;Disabled&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+    <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>
+  
+  <strong>if</strong> <font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_init</font><font color="4444FF">(</font><font color="#2040a0">helo</font>, <font color="#2040a0">ip</font>, <font color="#2040a0">NULL</font>, <font color="#2040a0">NULL</font>, <font color="#2040a0">NULL</font>,
+                        <font color="#2040a0">use_trusted</font>, <font color="#2040a0">use_guess</font><font color="4444FF">)</font><font color="4444FF">)</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">)</font>
+  <font color="4444FF"><strong>{</strong></font>
+    <font color="#444444">/* perform fake HELO */</font>
+    <font color="#2040a0">SPF_smtp_helo</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font>, <font color="#2040a0">helo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    
+    <font color="#444444">/* perform fake MAIL FROM */</font>
+    <font color="#2040a0">SPF_smtp_from</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font>, <font color="#2040a0">address</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    
+    <font color="#444444">/* assign and perform SPF parse */</font>
+    <font color="#2040a0">res</font> <font color="4444FF">=</font> <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">RES</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_policy_main</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    
+    <font color="#444444">/* print the results of the query.  The NULL check on the output is
+     * to the benefit of SOLARIS users where printf is unable to handle
+     * a NULL variable.  Linux users can omit this check. 
+     */</font>
+
+    <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">test_mode</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">)</font>
+    <font color="4444FF"><strong>{</strong></font>
+      <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;SPF short result:   %s<font color="#77dd77">\n</font>&quot;</font>,
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">rs</font> ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">rs</font> <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+      <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;SPF verbose result: %s<font color="#77dd77">\n</font>&quot;</font>,
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">error</font> ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">error</font> <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="4444FF"><strong>}</strong></font>
+    <strong>else</strong>
+    <font color="4444FF"><strong>{</strong></font>
+      <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;%s<font color="#77dd77">\n</font>%s<font color="#77dd77">\n</font>%s<font color="#77dd77">\n</font>&quot;</font>, 
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">rs</font>      ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">rs</font>      <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font>,
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">error</font>   ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">error</font>   <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font>,
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">explain</font> ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">explain</font> <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="4444FF"><strong>}</strong></font>
+
+    <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">use_explain</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">)</font>
+    <font color="4444FF"><strong>{</strong></font>
+      <font color="#2040a0">buf</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_get_explain</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+      <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;SPF explanation:    %s<font color="#77dd77">\n</font>&quot;</font>,
+        <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">explain</font> ? <font color="#2040a0">pinfo</font><font color="4444FF">-</font><font color="4444FF">&gt;</font><font color="#2040a0">explain</font> <font color="4444FF">:</font> <font color="#008000">&quot;NULL&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+      <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">buf</font><font color="4444FF">)</font><font color="4444FF">;</font>
+    <font color="4444FF"><strong>}</strong></font>
+
+    <font color="#444444">/* for the tests we need to be silent :-) */</font>
+    <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">test_mode</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">)</font>
+    <font color="4444FF"><strong>{</strong></font>
+      <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">use_trusted</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">)</font>
+      <font color="4444FF"><strong>{</strong></font>
+        <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;Trusted Forwarder:  Attempted.<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+      <font color="4444FF"><strong>}</strong></font>
+   
+      <strong>if</strong> <font color="4444FF">(</font><font color="#2040a0">use_guess</font> <font color="4444FF">=</font><font color="4444FF">=</font> <font color="#2040a0">SPF_TRUE</font><font color="4444FF">)</font>
+      <font color="4444FF"><strong>{</strong></font>
+        <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;Best Guess:         Attempted.<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+      <font color="4444FF"><strong>}</strong></font>
+
+      <strong>if</strong> <font color="4444FF">(</font><font color="4444FF">(</font><font color="#2040a0">buf</font> <font color="4444FF">=</font> <font color="#2040a0">SPF_build_header</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font><font color="4444FF">)</font><font color="4444FF">)</font> <font color="4444FF">!</font><font color="4444FF">=</font> <font color="#2040a0">NULL</font><font color="4444FF">)</font>
+      <font color="4444FF"><strong>{</strong></font>
+        <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;RFC2822 header:     %s<font color="#77dd77">\n</font>&quot;</font>, <font color="#2040a0">buf</font><font color="4444FF">)</font><font color="4444FF">;</font>
+        <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">buf</font><font color="4444FF">)</font><font color="4444FF">;</font>
+      <font color="4444FF"><strong>}</strong></font>
+    <font color="4444FF"><strong>}</strong></font>
+
+    <font color="#444444">/* close SPF session (free memory associated with parse) */</font>
+    <font color="#2040a0">SPF_close</font><font color="4444FF">(</font><font color="#2040a0">pinfo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="4444FF"><strong>}</strong></font>   
+  
+  <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">ip</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">address</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">free</font><font color="4444FF">(</font><font color="#2040a0">helo</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  
+  <strong>return</strong><font color="4444FF">(</font><font color="#2040a0">SPF_FALSE</font><font color="4444FF">)</font><font color="4444FF">;</font> 
+<font color="4444FF"><strong>}</strong></font>
+
+
+<font color="#444444">/* SPF_usage
+*
+*  Author: James Couzens &lt;jcouzens@6o4.ca&gt;
+*
+*  Date:   12/25/03
+*  Date:   07/28/04 - Renamed to spfqtool
+*
+*  Desc:
+*         Displays usage help information when the binary is called with
+*  no arguments.
+*
+*/</font>
+<strong>void</strong> <font color="#2040a0">SPF_usage</font><font color="4444FF">(</font><font color="4444FF">)</font>
+<font color="4444FF"><strong>{</strong></font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;spfqtool usage:<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;spfqtool [b|d|e|i|s|t|h|v]<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-b [0,1]   - Enable Best Guess support (True (0) or False (1))<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-d [x]     - DEBUG where x is a number between 1 and 255<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-e [0,1]   - Enable SPF explanation (True (0) or False (1))<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-h [host]  - HELO hostname to test with<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-i [addr]  - IP Address where the fake connection will come from<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-s [email] - What email address to test with<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-t [0,1]   - Enable Trusted Forwarder support (True (0) or False (1))<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;-v         - Display version string<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;Example: ./spfqtool -i 10.0.0.2 -s jcouzens@6o4.ca -h spftools.net<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;Minimum required arguments are 'i', and 's'<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+  <font color="#2040a0">printf</font><font color="4444FF">(</font><font color="#008000">&quot;<font color="#77dd77">\n</font>&quot;</font><font color="4444FF">)</font><font color="4444FF">;</font>
+
+  <strong>return</strong><font color="4444FF">;</font>
+<font color="4444FF"><strong>}</strong></font>
+
+<font color="#444444">/* end spfqtool.c */</font>
+
+</pre>
+</body>
+</html>

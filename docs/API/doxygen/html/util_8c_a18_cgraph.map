@@ -1,0 +1,12 @@
+base referer
+rect $dns_8h.html#a4 159,141 236,159
+rect $util_8h.html#a47 467,119 616,138
+rect $util_8h.html#a40 665,230 783,249
+rect $dns_8h.html#a8 284,183 417,202
+rect $dns_8h.html#a6 295,55 407,74
+rect $dns_8h.html#a7 296,98 405,117
+rect $dns_8h.html#a5 296,141 405,159
+rect $util_8h.html#a44 488,77 595,95
+rect $util_8h.html#a30 668,34 780,53
+rect $util_8h.html#a28 679,77 769,95
+rect $util_8h.html#a45 676,119 772,138

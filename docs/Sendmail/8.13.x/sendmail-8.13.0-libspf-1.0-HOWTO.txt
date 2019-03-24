@@ -1,0 +1,294 @@
+Sendmail v8.13.0 + libSPF v1.0-RC2 HOWTO
+by James Couzens <jcouzens@6o4.ca>
+Date: June 30, 2004
+
+james@code3 $ cd libspf-1_0_0
+james@code3 $ make
+
+make[1]: Entering directory `/home/james/code/libspf-1_0_0/src/libspf'
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -fPIC -c -o shared/main.o main.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -fPIC -c -o shared/dns.o dns.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -fPIC -c -o shared/util.o util.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -fPIC -c -o shared/macro.o macro.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -lresolv -shared -lresolv -Wl,-soname,libspf.so.1 -o libspf.so.1.0.0 shared/main.o shared/dns.o shared/util.o shared/macro.o
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -c -o static/main.o main.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -c -o static/dns.o dns.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -c -o static/util.o util.c
+gcc -Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -c -o static/macro.o macro.c
+ar r libspf.a /usr/lib/libc.so /usr/lib/libresolv.a static/main.o static/dns.o static/util.o static/macro.o
+ar: creating libspf.a
+mv ./libspf.a ../../lib
+mv ./libspf.so* ../../lib
+make[1]: Leaving directory `/home/james/code/libspf-1_0_0/src/libspf'
+cd src/spfquery && make all 
+make[1]: Entering directory `/home/james/code/libspf-1_0_0/src/spfquery'
+gcc -Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -DDEBUG -c -o spfquery.o spfquery.c
+gcc -Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -DDEBUG -lspf -o ../../bin/spfquery-static spfquery.o /usr/local/lib/libspf.a
+gcc -Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -DDEBUG -o ../../bin/spfquery-shared spfquery.o -lspf
+make[1]: Leaving directory `/home/james/code/libspf-1_0_0/src/spfquery'
+sh ./src/tellemhoss.sh
+================================================================================
+libspf [1.0-RC2]
+================================================================================
+
+libraries can be found in ./lib libspf developer forums:
+binaries can be found in ./bin http://forums.6o4.ca
+MTA patches can be found in ./patches
+Active libspf developers:
+PLEASE READ THE HOWTO DOCS for MTA
+IMPLEMENTATION James Couzens <jcouzens@6o4.ca>
+Teddy <teddy@teddy.ch>
+Currently supporting: Travis Anderson <travis@anthrax.ca>
+
+qmail - http://qmail.org Forward BUG reports to James
+Sendmail - http://sendmail.org
+Courier - http://courier-mta.org Website/API & more @ http://libspf.org
+
+================================================================================
+
+james@code3 # make install
+
+cp ./lib/libspf.a /usr/local/lib/libspf.a
+cp ./lib/libspf.so.1.0.0 /usr/local/lib/libspf.so
+cp ./src/libspf/spf.h /usr/local/include
+
+james@code3 # ldconfig
+james@code3 # ldconfig -p | grep spf
+
+libspf.so.1 (libc6) => /usr/local/lib/libspf.so.1
+
+james@code3 $ cd ../sendmail-8.13.0
+james@code3 $ patch -p0 < ../libspf-1_0_0/patches/sendmail/sendmail-8.13.0-libspf-1.0-RC3.diff
+
+patching file sendmail/readcf.c
+patching file sendmail/Makefile.m4
+patching file sendmail/sendmail.h
+patching file cf/feature/spf.m4
+patching file cf/m4/proto.m4
+patching file sendmail/srvrsmtp.c
+
+james@code3 $ cd cf/cf
+james@code3 $ cp generic-linux.mc sendmail.mc
+james@code3 $ vi sendmail.mc
+
+I appended the following line:
+
+FEATURE(spf)dnl
+
+DO NOT DO THE FOLLOWING (even tho the HOWTO included says you can, its wrong, because its broken):
+
+FEATURE(spf, `SPFAction', `SPFHeaderState', `SPFBestGuessState', `SPFTrustedForwarderState', `SPFExplainState', `SPFBestGuess', `SPFTrustedForwarder', `SPFExplain')dnl
+
+Although the idea is GREAT it doesn't work, so don't do it until Teddy has a chance (or someone else who can understand m4) to fix it, just apply the single feature.
+
+For the record I tried a few variations for example by putting each FEATURE on its own line with actual arguments and I almost had it working properly, but not quite, so this is why I say don't do it. Try if you are feel dangerous, and submit any positive results.
+
+james@code3 $ cat sendmail.mc
+
+divert(-1)
+#
+# Copyright ? 1998, 1999 Sendmail, Inc. and its suppliers.
+# All rights reserved.
+# Copyright ? 1983 Eric P. Allman. All rights reserved.
+# Copyright ? 1988, 1993
+# The Regents of the University of California. All rights reserved.
+#
+# By using this file, you agree to the terms and conditions set
+# forth in the LICENSE file which can be found at the top level of
+# the sendmail distribution.
+#
+#
+
+#
+# This is a generic configuration file for Linux.
+# It has support for local and SMTP mail only. If you want to
+# customize it, copy it to a name appropriate for your environment
+# and do the modifications there.
+#
+
+divert(0)dnl
+VERSIONID(`$Id: sendmail-8.13.0-libspf-1.0-HOWTO.txt,v 1.1 2007/11/13 00:51:34 root Exp $')
+OSTYPE(linux)dnl
+DOMAIN(generic)dnl
+MAILER(local)dnl
+MAILER(smtp)dnl
+FEATURE(spf)dnl
+
+james@code3 $ sh Build sendmail.cf
+
+Using M4=/usr/bin/m4
+rm -f sendmail.cf
+/usr/bin/m4 ../m4/cf.m4 sendmail.mc > sendmail.cf || ( rm -f sendmail.cf && exit 1 )
+*** ERROR: FEATURE() should be before MAILER()
+echo "### sendmail.mc ###" >>sendmail.cf
+sed -e 's/^/# /' sendmail.mc >>sendmail.cf
+chmod 444 sendmail.cf
+../../devtools/bin/install.sh -c -o root -g bin -m 0444 sendmail.cf /etc/mail/sendmail.cf
+rm -f submit.cf
+/usr/bin/m4 ../m4/cf.m4 submit.mc > submit.cf || ( rm -f submit.cf && exit 1 )
+echo "### submit.mc ###" >>submit.cf
+sed -e 's/^/# /' submit.mc >>submit.cf
+chmod 444 submit.cf
+../../devtools/bin/install.sh -c -o root -g bin -m 0444 submit.cf /etc/mail/submit.cf
+
+james@code3 # sh Build install-cf
+
+Configuration: pfx=, os=Linux, rel=2.6.5, rbase=2, rroot=2.6, arch=i686, sfx=, variant=optimized
+Using M4=/usr/bin/m4
+Creating /home/james/code/sendmail-8.13.0/obj.Linux.2.6.5.i686/sendmail using /home/james/code/sendmail-8.13.0/devtools/OS/Linux
+Making dependencies in /home/james/code/sendmail-8.13.0/obj.Linux.2.6.5.i686/sendmail
+rm -f sm_os.h
+ln -f -s ../../include/sm/os/sm_os_linux.h sm_os.h
+cc -M -I. -I../../include -DNEWDB -DLIBSPF main.c alias.c arpadate.c bf.c collect.c conf.c control.c convtime.c daemon.c deliver.c domain.c envelope.c err.c headers.c macro.c map.c mci.c milter.c mime.c parseaddr.c queue.c ratectrl.c readcf.c recipient.c sasl.c savemail.c sfsasl.c shmticklib.c sm_resolve.c srvrsmtp.c stab.c stats.c sysexits.c timers.c tls.c trace.c udb.c usersmtp.c util.c version.c >> Makefile
+Making in /home/james/code/sendmail-8.13.0/obj.Linux.2.6.5.i686/sendmail
+if [ ! -d /etc/mail ]; then mkdir -p /etc/mail; else :; fi
+install -c -o bin -g bin -m 444 helpfile /etc/mail/helpfile
+cp /dev/null statistics
+if [ ! -d /etc/mail ]; then mkdir -p /etc/mail; else :; fi
+install -c -o root -g bin -m 0600 statistics /etc/mail/statistics
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o main.o main.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o alias.o alias.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o arpadate.o arpadate.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o bf.o bf.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o collect.o collect.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o conf.o conf.c
+cc -O2 -I. -I../../include -DNEWDB -DLIBSPF -c -o control.o control.c
+
+- snip !
+
+james@code3 $ vi /etc/mail/sendmail.cf
+
+Looking at line 517 I can see the newly added SPF directives:
+
+# SPFAction
+O SPFAction=1
+
+# SPFHeaderState
+O SPFHeaderState=True
+
+# SPFBestGuessState
+O SPFBestGuessState=0
+
+# SPFTrustedForwarderState
+O SPFTrustedForwarderState=0
+
+# SPFExplainState
+O SPFExplainState=True
+
+# SPFBestGuess
+O SPFBestGuess=v=spf1 a/24 mx/24 ptr
+
+# SPFTrustedForwarder
+O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org
+
+# SPFExplain
+O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&...&receiver=%{xR}
+
+This is what you see if you DON'T listen to my advice as listed up above:
+
+# SPFAction
+O SPFAction=SPFAction
+
+# SPFHeaderState
+O SPFHeaderState=SPFHeaderState
+
+# SPFBestGuessState
+O SPFBestGuessState=SPFBestGuessState
+
+# SPFTrustedForwarderState
+O SPFTrustedForwarderState=SPFTrustedForwarderState
+
+# SPFExplainState
+O SPFExplainState=SPFExplainState
+
+# SPFBestGuess
+O SPFBestGuess=SPFBestGuess
+
+# SPFTrustedForwarder
+O SPFTrustedForwarder=SPFTrustedForwarder
+
+# SPFExplain
+O SPFExplain=SPFExplain
+
+Down at line 590 you see the new header:
+
+H?P?Return-Path: <$g>
+HReceived-SPF: ${spfheader}
+HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+for $u; $|;
+$.$b
+H?D?Resent-Date: $a
+H?D?Date: $a
+H?F?Resent-From: $?x$x <$g>$|$g$.
+H?F?From: $?x$x <$g>$|$g$.
+H?x?Full-Name: $x
+# HPosted-Date: $a
+# H?l?Received-Date: $b
+H?M?Resent-Message-Id: <$t.$i@$j>
+H?M?Message-Id: <$t.$i@$j>
+
+Moving on down to line 1023:
+
+# Checks the SPF records of sending domain
+R$* $: $1 $| <?>$&{spfreject}<?>
+R$* $| <?>1<?> $#error $@ 5.7.1 $: "550 Mail from [" $&{client_addr} "] Rejected. " $&{spfexplain}
+R$* $| <?>$* $: $1
+
+# Checks the SPF records of sending domain
+R$* $: $1 $| <?>$&{spfreject}<?>
+R$* $| <?>1<?> $#error $@ 5.7.1 $: "550 Mail from [" $&{client_addr} "] Rejected. " $&{spfexplain}
+R$* $| <?>$* $: $1
+
+james@code3 $ cd ../../sendmail
+james@code3 # sh Build install
+james@code3 # /etc/init.d/sendmail start
+james@code3 $ telnet localhost 25
+
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+220 code3.6o4.ca ESMTP Sendmail 8.13.0/8.13.0-SPF; Wed, 30 Jun 2004 05:35:15 -0700
+MAIL FROM: james@widgets.org
+250 2.1.0 james@widgets.org... Sender ok
+RCPT TO: jcouzens@6o4.ca
+250 2.1.5 jcouzens@6o4.ca... Recipient ok
+DATA
+354 Enter mail, end with "." on a line by itself
+From: James Couzens 
+To: James Couzens
+Subject: Sendmail Test
+Date: June 30, 2004
+
+testing
+
+.
+250 2.0.0 i5UCZFSV017746 Message accepted for delivery
+quit
+221 2.0.0 code3.6o4.ca closing connection
+Connection closed by foreign host.
+
+I then check my mail...
+
+Return-Path: <james@widgets.org>
+Delivered-To: 6o4.ca-jcouzens@6o4.ca
+Received: (qmail 27438 invoked by uid 1006); 30 Jun 2004 12:35:43 -0000
+Received: from unknown (HELO code3.6o4.ca) (24.81.185.71) by data.6o4.ca with SMTP; 30 Jun 2004 12:35:43 -0000
+Received-SPF: neutral (data.6o4.ca: domain of james@widgets.org is neutral about designating 24.81.185.71 as permitted sender)
+Received-SPF: pass (code3.6o4.ca: domain of james@widgets.org designates 127.0.0.1 as permitted sender) receiver=code3.6o4.ca; client_ip=127.0.0.1; envelope-from=james@widgets.org;
+Received: from localhost (localhost [127.0.0.1]) by code3.6o4.ca (8.13.0/8.13.0-SPF) with SMTP id i5UCZFSV017746 for jcouzens@6o4.ca; Wed, 30 Jun 2004 05:35:54 -0700
+Message-Id: <200406301235.i5UCZFSV017746@code3.6o4.ca>
+X-Authentication-Warning: code3.6o4.ca: localhost [127.0.0.1] didn't use HELO protocol
+From: James.Couzens@code3.6o4.ca
+To: James@code3.6o4.ca, Couzens@code3.6o4.ca
+Subject: Sendmail Test
+Date: June 30, 2004
+X-Spam-Flag: YES
+X-Spam-Checker-Version: SpamAssassin 2.62 (2004-01-11) on data.6o4.ca
+X-Spam-Report: * 0.3 NO_REAL_NAME From: does not include a real name * 0.3 MY_HELO Sender did not HELO * 1.1 NO_DNS_FOR_FROM Domain in From header has no MX or A DNS records * 2.0 RCVD_IN_SORBS RBL: SORBS: sender is listed in SORBS * [24.81.185.71 listed in dnsbl.sorbs.net] * 2.5 RCVD_IN_DYNABLOCK RBL: Sent directly from dynamic IP address * [24.81.185.71 listed in dnsbl.sorbs.net]
+X-Spam-Status: Yes, hits=6.2 required=4.5 tests=MY_HELO,NO_DNS_FOR_FROM, NO_REAL_NAME,RCVD_IN_DYNABLOCK,RCVD_IN_SORBS autolearn=no version=2.62
+X-Spam-Level: ******
+X-Evolution-Source: pop://jcouzens%406o4.ca@mail.uhfco.net/
+Mime-Version: 1.0

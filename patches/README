@@ -1,0 +1,21 @@
+File: libspf-1.0.0/patches/README
+Date: 05/28/05
+Desc: README for libSPF 1.0 patches 
+
+libSPF currently supports patches for the following Mail Transfer Agents:
+
+qmail    - v1.03
+         - v1.04 (netqmail)
+         - v1.05 (netqmail)
+
+Sendmail - v8.14.1
+         - v8.13.1
+         - v8.13.0
+         - v8.12.11
+         - v8.12.10
+
+Courier  - v0.45.4
+
+Postfix  - v2.1.4
+
+EOF

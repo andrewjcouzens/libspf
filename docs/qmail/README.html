@@ -1,0 +1,222 @@
+<html>
+  <head>
+    <title>README</title>
+  </head>
+
+  <body>
+    <h2>README</h2>
+    <pre>
+
+File:   README
+Author: James Couzens &lt;jcouzens@codeshare.ca&gt;
+Desc:   README file for working with libSPF and qmail
+Date:   Tue Aug  3 10:01:28 PDT 2004 - Updated
+
+=======================================================================================
+
+TCPSERVER GLOBAL VARS:
+
+SPF_ACTION        (control/spfaction)
+SPF_TARPIT        (control/spftarpit)
+SPF_TARPIT_TIME   (control/spftarpittime)
+SPF_EXPLAIN_STATE (control/spfexplainstate)
+SPF_TRUSTED_STATE (control/spftrustedstate)
+SPF_GUESS_STATE   (control/spfguesstate)
+SPF_HEADER_STATE  (control/spfheaderstate)
+SPF_DEBUG_STATE   (control/spfdebugstate)
+
+By setting these in your environment with appropriate values you can nicely alter the
+behaviour of libspf for individual persons on your network.  A great example is by
+placing SPF_ACTION inside of tcp.smtp and setting it to a 0 for 127.0.0.1 eg:
+
+127.:allow,RELAYCLIENT=&quot;&quot;,RBLSMTPD=&quot;&quot;,SPF_ACTION=&quot;0&quot;
+
+This way 127.0.0.1 never has SPF checks performed on them.  I'm sure you get the idea.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfaction
+
+Inside this file place a single digit between 0 and 7.
+
+Below describes the behaviour of these digits:
+
+0: disabled
+1: enabled (only prepends headers, and only if spfheaderstate == 1)
+2: REJECT: fail; ACCEPT: pass, none, softfail, error, netural, unknown; 
+3: REJECT: fail, softfail; ACCEPT: pass, none, error, netural, unknown;
+4: REJECT: fail, softfail, neutral; ACCEPT: pass, none, error, unknown;
+5: REJECT: fail, softfail, neutral, none; ACCEPT: pass, error, unknown;
+6: REJECT: fail, softfail, neutral, none, error; ACCEPT: pass, unknown;
+7: REJECT: fail, softfail, neutral, none, error, unknown; ACCEPT: pass;
+
+Chose one of the above error levels that best suits you.  Since this is still beta
+I think 1 is best.  Youe mileage may vary.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spftarpit     - value (single integer)
+
+0 (default) = disable tarpitting
+1 (enabled) = enable tarpitting
+
+spftarpittime - value (single integer)
+
+0 = how long to tarpit for (default is 60)
+
+Tarpitting happens based on the above set spfaction.  If the action 
+was set to 2, then upon a softfail the process would sleep x seconds
+and then call quit (where x is the value of spftarpittime or the 
+default 60)
+ 
+I suggest you use this with caution, perhaps only enabling it on 
+FAIL which is something that can only happen when an SPF rule is supplied, and some
+how the connecting client violates the policy.  You have been warned.  This could quite
+EASILY LEAD TO YOUR SERVER BEING DOSSED BY SOME TURD.  DO NOT BLAME ME, DEFAULT IS OFF.
+CONSIDER YOUR SELF WARNED.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfheaderstate
+
+value (single integer):
+
+1 (default) = enabled prepending Received-SPF: headers
+0 = no not prepend headers
+
+When set to 1, libspf will pre-pend &quot;Received-SPF:&quot; headers as per the SPF RFC
+Internet Draft.  This are useful for third party applications such as SpamAssassin,
+and even email clients capable of parsing headers to know where to filter email to.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfbestguess 
+
+value: (single line of text)
+
+default: v=spf1 a/24 mx/24 ptr 
+
+This query is looked up in an attempt to make a guess against the user in the event
+no record is found and the trusted forwarder lookup fails.  The default value exists
+within libspf, so creating the control file is only necessary if you wish to change
+this value.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfguessstate
+
+value (single integer):
+
+1 (default) = perform best guess lookup when all else fails
+0 = do not perofrm best best guess lookups.
+
+When an SPF query fails, and then subsequently a trusted forwarder query possibly fails,
+libspf will attempt to perform a &quot;best guess&quot; query using a default string which can 
+be redefined using the 'spfguess' control file.  The default value exists within libspf,
+so creating the control file is only necessary if you wish to change this value.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfexplanation
+
+value (single line of text)
+
+default: See http://spf.pobox.com/why.html?sender=%{S}&amp;ip=%{I}&amp;receiver=%{xR}
+
+This string (can include macros) is expanded and sent to the client for every result
+case excluding pass.  The default value exists within libspf, so creating the control
+file is only necessary if you wish to change this value.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfexplainstate
+
+value (single integer): 
+
+1 (default) = append explanation
+0 = do not append explanation
+
+When set to 1, explanations will be automatically printed out after any spf query 
+excluding pass.  This information is designed to be informative and helpful to a user
+who has just likely had his or her email rejected.  See the above 'spfexplain' to
+define your own string to use instead.  The default value exists within libspf, so
+creating the control file is only necessary if you wish to change this value.
+
+When set to 0, explanations are not appended.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spftrustedforwarder
+
+value (single line of text)
+
+default: v=spf1 include:spf.trusted-forwarder.org
+
+This string (can include macros) is expanded and is used in the event that a connecting
+client's query results in NONE (no SPF record published).  libspf will then (if enabled)
+attempt to contact trusted-forwarder.org (default) which is a global whitelisting system
+. You can add additional sites, or provide your own.  The default value exists within
+libspf, so creating the control file is only necessary if you wish to change this value.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spftrustedstate
+
+value (single integer):
+
+1 (default) = enabled trusted forwarder lookups
+0 = no not perform trusted forwarder lookups
+
+When set to 1, libspf will attempt to contact the site contained within that text,
+which would be ideally a whitelisting site (anything can really go there, but this
+particular file is here specifically to handle larger whitelisting services) that 
+would be contacted in the event an SPF query returns NONE.  The default value exists
+within libspf, so creating the control file is only necessary if you wish to change 
+this value.
+
+=======================================================================================
+
+CONTROL FILE:
+
+spfdebugstate
+
+value (single integer):
+
+6 (default) = enabled full debugging (default is hardcoded in the libSPF source)
+0 = no not perform trusted forwarder lookups
+
+When set to anything above 0 this will enable debugging in libSPF (provided that
+when you configured libSPF you supplied --enable-debug).  To learn more about how
+debugging works in libSPF please read the &quot;Debugging libSPF&quot; PDF or TXT that
+accompanied your distribution or see the on-line version at:
+http://libspf.org/debugging_libspf.html
+
+It should be noted that Autoconf enables _SPF_DEBUG_LOGFILE by default, and the 
+only way to disable this (to get deubgging to show up on STDOUT) is to manually
+edit the Makefile and comment out or remove the _SPF_DEBUG_LOGFILE macro leaving
+only _SPF_DEBUG.
+
+=======================================================================================
+
+
+    </pre>
+  </body
+</html>

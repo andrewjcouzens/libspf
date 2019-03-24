@@ -1,0 +1,92 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for v1.0.0 Release Candidate 5
+
+
+1.0-RC5 -
+
+ Fixed:
+ ------
+ - Fixed bug where INCLUDE mechanism or REDIRECT modifier would result in an
+   instant use of either aborting parse contrary to the ambiguous wording of
+   the RFC.  (RM)
+ - Fixed bug where PTR mechanism which resulted in passes for domains falling
+   withing the subdomain of a similar superdomain.  eg: anyone from foo.6o4.ca
+   could send mail as anyone from bar.6o4.ca since only the superdomain was
+   considered.  Thanks to travis for fixing it.
+ - Fixed SEGV in SPF_init when called with NULL arguments.  This is of little
+   worry, since it only affects people attempting to work with the API and
+   failing to pass appropriate information.  This has been cleaned up with more
+   checks added so that the   library exits gracefully when not passed valid
+   arguments.  Thanks to Pawel Foremski <pjf@gna.org> for pointing this out.
+ - Fixed Autoconf to check for pwd.h and grp.h and placed these new checks
+   dependant on the --enable-spfmilter configure flag
+
+ Changed:
+ --------
+ - Renamed spfquery to spfqtool because libspf2 was clobbering our binaries,
+   amusingly enough, they can name their library intentionally as if to appear
+   to supersede ours, remove our ability to make use of the "2" series version
+   scheme, yet we still take the high road and re-name our querytool so as to
+   not be in the way.
+
+   In addition to being renamed, a patch by Jeff. A. Earickson
+   <jaearick@colby.edu> for Solaris has been applied which fixes the oversight
+   made in RC4 with regards to the u_int8_t type used.
+ - Moved 'Docs' directory to 'docs'
+ - Moved 'examples/qmail' to 'examples/qmail'
+
+ Added:
+ ------
+ - Added (integrated) Jef Poskanzer's 'spfmilter' v0.92.  Configuring the
+   package with  --enable-spfmilter will enable compilation of this package.
+   This is a FORK of Jef's milter and he will not be maintaining it.  So
+   PLEASE DO NOT EMAIL JEF WITH PROBLEMS RELATING TO THE MILTER!!  PLEASE!
+   Use the libSPF developer forums @ http://forums.6o4.ca or contact me (james)
+   directly @ jcouzens@codeshare.ca
+ - Added new qmail control file 'control/spfdebugstate' which can be used to
+   control the debugging level of libSPF when it is configured with
+   '--enable-debug' which enables compile time macros _SPF_DEBUG and
+   _SPF_DEBUG_LOGFILE.
+ - Added SPFDebugState variable to Sendmail which can be used to control the
+   debugging level of libSPF when its configured with '--enable-debug' which
+   enable compile time macros _SPF_DEBUG and _SPF_DEBUG_LOGFILE.
+ - Added patch by Paul Howarth <paul@city-fan.org> which fixes DESTDIR issue
+   where during install several unnecessary header files were being installed
+   that shouldn't have been
+ - Thanks for Martin Krafft <madduck@madduck.net> of the Debian project for
+   his time spent getting libspf 1.0-RC4 added to Debian package system.
+ - Submitted EBUILD by Michael Weiner to the Gentoo BUGZILLA database for
+   inclusion.
+
+ Improved/Updated:
+ -----------------
+ - qmail documentation is now converted to HTML which is a conversion from
+   the old README.
+ - Sendmail HOWTO is now updated for Sendmail v8.13.1 and includes updated
+   information on properly rejecting emails which was missing from the
+   previous version.
+ - Doxygen tree is rebuilt to reflect changes in the code
+
+ New:
+ ----
+ - New Sendmail patch against Sendmail v8.13.1
+ - New Sendmail HOWTO which is the 8.13.0 HOWTO updated to include more
+   acurate and detailed step by step instructions.
+ - New qmail patch against netqmail v1.05
+ - New qmail HOWTO which is a step by step walkthrough of how to patch
+   qmail with libSPF.
+
+
+EOF

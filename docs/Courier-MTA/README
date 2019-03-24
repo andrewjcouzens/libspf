@@ -1,0 +1,26 @@
+# Angel Fraguela (afraguela@euronippon.es) 2004
+# For courier-MTA 0.45.4 and libspf.25
+#
+# usage
+# ------
+# From the directory where courier sources are:
+# patch -p0 < courier-0.45.4-spf.diff
+# cd courier-0.45.4
+# ./confugure --without-ipv6 etc....
+# make, make install, etc ... (as usual)
+#
+# ATTENTION
+# May work with diferent versions of courier and libspf.
+
+Sorry there is currently no more information available about how
+to patch Courier with libspf. 
+
+I have consulted the author of the Courier patch and requested that
+he make a HOWTO if possible.
+
+If you would like to contribute a 'walkthrough' or 'HOWTO'
+document please post it in the forums or E-mail it to me and
+I will gladly include it with this project.
+
+Try our development forums @ http://forums.6o4.ca for further
+information.

@@ -1,0 +1,168 @@
+# Angel Fraguela (afraguela@euronippon.es) 2004
+# For courier-MTA 0.45.4 and libspf.25
+#
+# usage
+# ------
+# From the directory where courier sources are:
+# patch -p0 < courier-0.45.4-spf.diff
+# cd courier-0.45.4
+# ./confugure --without-ipv6 etc....
+# make, make install, etc ... (as usual)
+#
+# ATTENTION
+# May work with diferent versions of courier and libspf.
+#
+#
+--- courier-0.45.4/courier/module.esmtp/courieresmtpd.c	Sun Feb  1 05:46:28 2004
++++ courier-0.45.4-spf/courier/module.esmtp/courieresmtpd.c	Mon May 17 14:30:53 2004
+@@ -2,6 +2,7 @@
+ ** Copyright 1998 - 2002 Double Precision, Inc.
+ ** See COPYING for distribution information.
+ */
++#include 	"spf.h"
+ 
+ #if	HAVE_CONFIG_H
+ #include	"config.h"
+@@ -38,6 +39,7 @@
+ #include	"numlib/numlib.h"
+ #include	"tcpd/spipe.h"
+ #include	"tcpd/tlsclient.h"
++
+ static const char rcsid[]="$Id: courier-0.45.4-spf.diff,v 1.1 2007/11/13 00:51:35 root Exp $";
+ 
+ static char helobuf[256];
+@@ -58,6 +60,7 @@
+ static time_t data_timeout;
+ 
+ static const char *tcpremoteip, *tcpremotehost;
++static int checkspf=0;
+ 
+ #define	INIT_TEERGRUBE	8
+ #define	MAX_TEERGRUBE	128
+@@ -434,21 +437,66 @@
+ 
+ static int domailfrom(const char *, const char *);
+ 
++
++static int spfquery(const char* from, const char* ip, const char* helo){
++
++  //helo - domain ext ...
++  int res;
++  char *p=(char*)helo;
++  char *domain;
++  peer_info_t* peer_info;
++
++  while ((*p != ' ') && *p) p++;
++
++  domain=(char*)malloc(p-helo);
++  memcpy(domain,helo,(p-helo)-1);
++  memset(domain+(p-helo),1,0);
++
++  peer_info = SPF_init("courier-mta", ip, NULL, NULL, NULL, FALSE, FALSE);
++  SPF_smtp_helo(peer_info, domain);
++  SPF_smtp_from(peer_info, from);
++  peer_info->RES = SPF_policy_main(peer_info);
++  res = peer_info->RES;
++
++  SPF_close(peer_info);
++  
++  free(domain);
++  return res;
++}
++
++
+ static int mailfrom(const char *p)
+ {
+-const char *q=skipaddress(&p);
++	const char *q=skipaddress(&p);
++	char *addr;
+ 
+ 	set_submit_error(0, 0);
+ 	if (q)
+ 	{
+ 		/* Save <address> in mailfroms */
+ 
+-		if (mailfroms)	free(mailfroms);
+-		mailfroms=courier_malloc(q-p+3);
+-		memcpy(mailfroms, p-1, q-p+2);
+-		mailfroms[q-p+2]=0;
+-		set_submit_error(0, 0);
+-		return (domailfrom(p, q));
++	    if (mailfroms)	
++		free(mailfroms);
++
++	    mailfroms=courier_malloc(q-p+3);
++	    memcpy(mailfroms, p-1, q-p+2);
++	    mailfroms[q-p+2]=0;
++ 	    set_submit_error(0, 0);
++
++	    if(checkspf == 1){
++	        addr=(char*)malloc(q-p);
++	        memcpy(addr, p+1, (q-p)-1);
++	        memset(addr+(q-p),1,0);
++	    
++	        if( spfquery(addr,tcpremoteip, helobuf) > 1 ){
++	           // 0=ok, 1=no spf support in dns, else ERROR
++	           addiovec_error(NULL, "513 Relaying denied - Probably SPAM.");
++	           return -1;
++	        }
++	        free(addr);
++            }
++	    
++	    return (domailfrom(p, q));
+ 	}
+ 	addiovec_error(NULL, "554 Syntax error - your mail software violates RFC 821.");
+ 	return (-1);
+@@ -467,6 +515,7 @@
+ 	hasverp=0;
+ 	hasstarttls=0;
+ 
++
+ 	for (r=q+1; *r; r++)
+ 	{
+ 		if (isspace((int)(unsigned char)*r))	continue;
+@@ -932,7 +981,8 @@
+ 	** When called via -bs to sendmail, dump log to /dev/null via stderr,
+ 	** else record everything via syslog.
+ 	*/
+-
++	checkspf=atoi(getenv("BOFCHECKSPF"));
++	
+ 	if (chdir(courierdir()))
+ 		clog_msg_errno();
+ 
+@@ -1040,7 +1090,6 @@
+ 
+ 			*p=toupper(*p);
+ 		}
+-
+ 		if (strcmp(line, "QUIT") == 0)	break;
+ 		if ((strncmp(line, "EHLO ", 5) == 0 ||
+ 			strncmp(line, "HELO ", 5) == 0) &&
+--- courier-0.45.4/courier/module.esmtp/Makefile.in	Sun Feb  1 05:49:10 2004
++++ courier-0.45.4-spf/courier/module.esmtp/Makefile.in	Sat May 15 20:32:07 2004
+@@ -83,7 +83,7 @@
+ LIBDL = @LIBDL@
+ LIBGDBM = @LIBGDBM@
+ LIBOBJS = @LIBOBJS@
+-LIBS = @LIBS@
++LIBS = @LIBS@ -lspf
+ LIBTOOL = @LIBTOOL@
+ LN_S = @LN_S@
+ LTLIBOBJS = @LTLIBOBJS@
+--- courier-0.45.4/courier/module.esmtp/esmtpd.dist.in	Sun Feb  1 05:46:28 2004
++++ courier-0.45.4-spf/courier/module.esmtp/esmtpd.dist.in	Sun May 16 20:44:40 2004
+@@ -39,6 +39,13 @@
+ 
+ BOFHCHECKDNS=1
+ 
++##NAME: BOFHCHECKSPF:0
++#
++#  Comment out the following line in order to accept mail with a bad
++#  return address.
++
++BOFHCHECKSPF=1
++
+ ##NAME: BOFHNOEXPN:1
+ #
+ #  Set BOFHNOEXP to 1 to disable EXPN

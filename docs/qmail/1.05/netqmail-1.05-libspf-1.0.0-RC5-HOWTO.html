@@ -1,0 +1,101 @@
+<html>
+<head>
+  <title>netqmail-1.05-libspf-1.0.0-RC5-HOWTO.txt</title>
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+qmail+libSPF
+
+Patches are in subdirectories named according to the version of
+qmail that they were made against.
+
+1.03 - last official version of qmail by djb 
+1.04 - First official fork of qmail by Russell Nelson &amp; Co.
+1.05 - Second official fork of qmail by Russell Nelson &amp; Co.
+
+Patch qmail, make setup check, and be on your way.  The control
+files libSPF uses are all found in the controls subdirectory.
+
+Full documentation can be found in the 'docs' directory at the
+root of the archive this README came from.
+
+Unpack your qmail.
+
+  james@antitrust qmail $ tar zxvf ./netqmail-1.05.tar.gz 
+  netqmail-1.05/
+  netqmail-1.05/qmail-1.03.tar.gz
+  netqmail-1.05/old-patches/
+  netqmail-1.05/old-patches/qmail-isoc.patch
+  netqmail-1.05/old-patches/netqmail-1.04.patch
+  netqmail-1.05/old-patches/README
+  netqmail-1.05/collate.sh
+  netqmail-1.05/README
+  netqmail-1.05/md5sums
+  netqmail-1.05/other-patches/
+  netqmail-1.05/other-patches/README
+  netqmail-1.05/other-patches/ucspi-tcp-0.88.nodefaultrbl.patch
+  netqmail-1.05/other-patches/checkpassword-0.90.errno.patch
+  netqmail-1.05/other-patches/daemontools-0.76.errno.patch
+  netqmail-1.05/other-patches/mess822-0.58.errno.patch
+  netqmail-1.05/other-patches/ucspi-tcp-0.88.a_record.patch
+  netqmail-1.05/other-patches/ucspi-tcp-0.88.errno.patch
+  netqmail-1.05/other-patches/qmailanalog-0.70.errno.patch
+  netqmail-1.05/COPYRIGHTS
+  netqmail-1.05/netqmail-1.05.patch
+
+Run the collate shell script:
+
+james@antitrust netqmail-1.05 $ ./collate.sh 
+
+  You should see 7 lines of text below.  If you see anything
+  else, then something might be wrong.
+  [1] Extracting qmail-1.03... 
+  tar: Read 1024 bytes from -
+  [2] Patching qmail-1.03 into netqmail-1.05.  Look for errors below:
+  24
+  [4] The previous line should say 24 if you used GNU patch.
+  [5] Renaming qmail-1.03 to netqmail-1.05...
+  [6] Continue installing qmail using the instructions found at:
+  [7] http://www.lifewithqmail.org/lwq.html#installation
+
+
+Change directory up into the newly created 'netqmail-1.05' dir:
+
+  cd netqmail-1.05
+
+Patch qmail with libSPF:
+
+  james@antitrust netqmail-1.05 $ patch -p1 &lt; ../../libspf-1.0.0-RC5/patches/qmail/1.05/netqmail-1.05-libspf-1.0.0-RC5.diff
+  patching file qmail-smtpd.c
+  patching file qmail-showctl.c
+  patching file Makefile
+  patching file spf.h
+
+Then proceed to build qmail as you normally would via 'make setup check' or 
+whatever it is you normally do :)
+
+The Makefile assumes that you are going to link dynamically.  If this is not
+what you want edit the Makefile and go to line: 1544 and change '-lspf' to 
+'/usr/local/lib/libspf.a -lresolv' if you have 'make installed' libSPF, or 
+'../../libspf-1.0.0-RC5/lib/libspf.a -lresolv' if you didn't but have run 'make' on
+libSPF.
+
+It should look like this:
+
+        datetime.a getln.a open.a sig.a case.a env.a stralloc.a \
+        alloc.a substdio.a error.a str.a fs.a auto_qmail.o \
+        /usr/local/lib/libspf.a -lresolv \
+        `cat socket.lib`
+
+Note that you can have NO SPACES after the '\' marks indicating additional lines.
+
+Problems?  E-mail me!  I'm happy to help.  First, check the libSPF developer
+Forums @ http://forums.6o4.ca.
+
+If that doesn't help you, E-Mail me: James Couzens &lt;jcouzens@codeshare.ca&gt;
+
+EOF
+
+</pre>
+</body>
+</html>

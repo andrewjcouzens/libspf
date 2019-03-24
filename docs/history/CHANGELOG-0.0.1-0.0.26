@@ -1,0 +1,261 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for versions 0.0.1 to 0.0.26:
+
+.01  - creation
+.02  - retrieving DNS records
+.03  - check SPF version, examin ip4: mechanism
+.04  - localhost check added to qmail-smtpd, added prefix checks
+.05  - fixed memory leak in qmail-smtpd caused by abnormal termination
+       of connection to smtpd or by normal "quit".  
+       UTIL_expand_ip now looks for ip mechanisms with no cidr block
+       supplied as the RFC says shall be interpreted as /32 which now
+       occurs.
+.06  - added support for MX mechanism.
+     - policy main broken down into separate utility functions,
+       and there are now separate functions to handle DNS queries for
+       T_TXT and T_MX records.  I will likely clean that up a little bit
+       in the near future.
+     - barons makefile changes are added and now compiles flawlessly
+       under obsd using gmake.  I will try to fix the makefile to work
+       with regular make.
+     - error reporting moved into error.c
+.07  - added support for A mechanism
+     - implemented cidr checks for MX mechanism
+     - implemented negative prefix parse halts on all mechanisms
+     - new file dns.c contains major DNS functions
+.07.1- added url_encode() function to util.c
+.08  - added support for PTR mechanism
+     - this functionality is __BROKEN__ in linux when attempting to
+       obtain additional hostnames assigned with a PTR lookup, but
+       it works fine in BSD.
+.09  - added support for INCLUDE mechanism
+     - uses a dummy function UTIL_expand_macro which needs to be
+       completed.
+.10  - added support for EXISTS mechanism
+.11  - added header prepending for qmail
+     - moved qmail related files into new directory include/qmail
+     - new file mta_qmail.c to handle header prepending 
+.12  - removed linked list functions UTIL_list_add / 
+       UTIL_list_destory as they are no longer needed and removed
+       their structures from spf.h
+     - Rewrote PTR parsing to use a custom query function to 
+       properly handle multiple PTR records.
+.13  - Added sendmail support (mta_sendmail.c) and a good portion
+       of the header files from sendmail-8.12.10.  Also a modified
+       copy of (main.c) and (srvrsmtp.c) will have patches made
+       from them.  A copy of the config file is required because
+       i'm hooking a created macro called {libSPF} in the 
+       sendmail.cf file (as it would eventually be called).
+.14  - added MACRO_expand. (macro.c) It is incomplete. All %{ type 
+       macros are expanded to "DUMMY_EXPAND". Things like "% ", "%i" 
+       and whatnot cause it to return NULL. The RFC says that those
+       must be treated as literal.
+.15  - added proper support for EXPLAIN and REDIRECT mechanisms.
+       fixed memory error with PTR lookup
+.16  - removed MACRO_freebuf function and moved the entire loop
+       inside of MACRO_expand since its walking the list once
+       anyways to concatenate the return string, might as well
+       just do it all at the same time.
+     - fixed 3 memory related bugs in MACRO_expand and removed
+       the stub function (MACRO_process) and started to write it.
+       it currnetly handles the major single char mechanisms, 
+       but BE AWARE the library isn't necessarily populating all
+       of the data in the peer_info structure yet.  for example
+       i still haven't written the MX validate function.
+.17  - cleaned up qmail-smtpd patch, thanks to Steve Misel for his
+       contribution (using addr.s instead of arg which is already
+       cleaned).
+     - added 'passed null char' error dumping at function start in
+       remainder of util.c functions.
+     - rewrote most of macro.c, just not able to make it work.
+     - split MACRO_process into intself and a separate function
+       MACRO_eatmore to make it less nasty.
+.18  - fixed logic error in PTR mechanism code
+     - added more verbose debugging for PTR mechanism
+     - accepted wayne's spfquery.c and debug output change.  spfquery
+       binary will be made (make spfquery) which can then be used to
+       stress test libSPF.  Known recursive hangs cpu, working on it.
+     - done away with mta_MTA-NAME.c code, these single functions can
+       now be located in the patches against the respective MTA.  The
+       header string is now moved into the peer_info structure and is
+       called received_spf.  The header is now populated from 
+       SPF_policy_main.
+     - peer_info struct no longer global
+     - sendmail support broken for the moment until I fix the patch to
+       work with a now non-global peer_info struct, and write it to 
+       handle the move of header prepending.
+.19  - fixed bug where connect from localhost would segfault
+     - fixed typo in qmail patches
+     - fixed bug(s) in PTR mechanism parsing
+     - fixed logical parsing of PTR mechanism
+     - fixed bug(s) in MX mechanism parsing
+     - fixed bug(s) in MACRO_eatmore
+     - fixed bug(s) in MACRO_expand
+     - fixed bug(s) in MACRO_process
+     - fixed memory leak in UTIL_rev_addr
+     - fixed spfquery.c which I broke in 0.18
+     - cleaned up spfquery.c a bit
+     - added ERROR_nomem and ERROR_pton functions to error.c which now
+       EXIT upon call passing error string to stdout.
+     - header files from MTA no longer required during build.  
+     - WITH_QMAIL and WITH_SENDMAIL flags deprecated and removed.
+     - re-worked qmail patch to work with changes to API
+       - SPF_init now takes remoteip and local host name again
+       - SPF_close must be passed, and will return peer_info (freed)
+       - SPF_get_header returns formatted Received-SPF header which 
+         must then be free'd
+     - implemented support for deprecated mechanism "default"
+     - mta_generic.c renamed smtp.c
+     - mta_generic functions renamed from MTA_* to SPF_*\
+     - MTA_smtp_ehlo function removed, SPF_smtp_helo handles both
+     - new file header.c contains functions which manipulate headers
+     - new file explain.c contains explain rejection string gernation
+     - peer_info structure switched helo, from, current_domain,
+       mta_hname, r_ip, and explain to pointers that are now dynamically
+       allocated.  See new util function UTIL_free().
+     - Now passing tests 0-57, 60, 61, 64, 68-74, 76, 78, 82
+     - 'make test' removed from make file
+     - test.pl / test.txt moved into new direction 'tools'
+     - removed makefiles folder, no longer necessary
+     - Some other small changes I can't remember now.
+.20  - fixed some off by one overwrites happening randomly during macro parse
+     - fixed bug(s) in INCLUDE mechanism parsing
+     - fixed bug(s) in EXIST mechanism parsing
+     - fixed bug where emails failing still tagged as pass
+     - renamed spf result codes to SPF_* for clarity
+     - removed PREFIX enum
+     - new structure containing header strings (spf_result_t), result strings,
+       result codes, and lengths of those strings
+     - added recursion checking (max 20) via spf_rlevel global var
+     - fixed CIDR calculations which were suffering from 2 missing lines of code
+       from a previous checkout which have been readded
+     - fixed test.txt : rules: 104, 102, 101, 100 
+     - Now passing tests 0-107, 109, 110, 112, 116, 118-120, 123, 124, 131,
+       133, 134, 137, 138, 141-143
+     - new tests results file called TEST_RESULTS
+     - added support for new result types 'NEUTRAL' and 'NONE' and updated
+       behaviour of 'UNKNOWN'
+     - re-added sendmail diff's from 0.15 but don't work with current yet
+     - accepted wayne's patches to spfquery.c and test.pl
+     - updated spfquery.c to work with new changes in libSPF
+     - other stuff probably forgotten
+.21  - fixed bug in header placement (header ending in \r\n in stead of \n)
+     - fixed extra space in qmail dynamic makefile causing it to fail makes
+     - fixed bug in A mechanism when CIDR mask was specified
+     - fixed bug in PTR mechanism (debug mode only, missing var in output)
+     - fixed missing aliases loop in UTIL_a_cmp()
+     - fixed bug in REDIRECT mechanism where certain queries would poo poo
+       by overwriting memory.
+     - added default explanation
+     - added previously unknown about xR expansion macro
+     - added previously overlooked s expansion macro
+     - added support for p macro (validation of client hostname via PTR lookup)
+     - NEW QMAIL FILES:
+       - control/spfaction - controls action on SPF query result
+       - control/spfbestguess - contains SPF query language
+       - control/explainstate - toggle explanation output
+       - control/spfexplanation - contains default explanation (can use macro)
+       - control/spfguesstate - toggle best guess behaviour
+       - control/spfheaderstate - toggle pre-pending Received-SPF headers
+       - control/spftrustedforwarder - contains SPF query language
+       - control/spftrustedstate - toggle querying of Trusted Forwarder
+       - all information about this is in include/qmail/README and HOWTO
+     - qmail status patch added (patch against qmail-showctl.c)
+     - added new API function SPF_result for dealing with result string creation
+     - added explanation output to qmail patch
+     - added best guess support
+     - added trusted forwarder support
+     - added support for unknown mechanism in both header and result response
+     - discovered that gethostbyname will not support '_' characters in hostnames
+       will have to write a function to replace this like I seem to have had to
+       do everywhere else...
+     - Now passing tests 0-120, 122-124, 131, 133, 134, 137, 138, 140-143 
+     - updated spfquery to work with changes to SPF_init
+     - find qmail control files in include/qmail/control with default settings
+     - added SPF logging function to generate a log (/var/log/spflog.txt) which
+       outputs in the following format: 
+       [YY-MM-DD HH:MM:SS] result : email [ip], spfver, depth, error (if any)
+.22  - fixed bug in qmail-smtpd.c patch where free'd structure would result in
+       MTA close with multiple destination addresses (contrib: Patrick Earl)
+     - fixed bug in SPF_smtp_from where repeating MAIL FROM commands resulted
+       in memory leak. (contrib: Patrick Earl)
+     - Reworked qmail-smtpd.c patch to properly disable SPF checks when action is 0
+     - enabled tarpitting in qmail patch
+     - NEW QMAIL FILES:
+         - control/spftarpit - toggle tarpitting
+         - control/spftarpittime - how long to tarpit for
+     - Fixed (AGAIN *sigh*) invalid prepend strings (terminated with \r\n\ instead
+       of \n which causes MS mail clients to barf attachments into mail body and 
+       subject/from show up blank).
+.23  - fixed buffer overflow bug in debug code enforcing a limit upon possible
+       debugging output.  A special thank you to Gregory Neil Shapiro for choosing
+       to point this out in a post to the mailinglist and cheaply using it
+       as an excuse not to integrate a patch into sendmail.  For the rest of
+       class who aren't familiar with the correct methods of bug submission,
+       one might want to inform the author on the off chance he might fix it.
+     - fixed bug in PTR comparison where function returned FALSE by default instead of
+       TRUE.
+     - Thanks to Patrick Earl for pointing out that ptr:hostname would automatically
+       pass any test due to the way the comparison was performed.  The discovery of this
+       brought to light that the current tests do not check for this.  One should be added
+       in the next release of tests.  libSPF also of course now performs a check for this
+       and should work although is actually untested.
+     - PTR domain.tld vs domain.tld comparisons are now case insensitive
+     - Modified header output to comply with new RFC draft 2.9.7.
+     - patch against sendmail-8.12.10 is rewritten basically, and is now fully functional.
+       please see the HOWTO and README documents in the include/sendmail directory.
+     - added new file FAQ which should handle some frequently asked questions
+     - Now passing tests 0-127, 129, 132, 134, 135, 138, 139, 141-144 
+     - ACTION responses softfail and fail have been reversed, such that fail is now 2
+       and softfail is now 3.  This makes more sense, as we would want to fail on hard
+       failures first, and softfailures second.  This is also reflected in the tarpitting.
+.24  - fixed debian segfault bug when domain is a CNAME.  Thanks to Albert
+       Weichselbraun <albert@atnet.at> for not only bringing this to our
+       attention, but also supplying a patch.
+     - fixed segfault bug when result was softfail.
+     - fixed bug in qmail-smtpd.c, a definate must update for qmail users.
+     - Implemented changes based on patches by Patrik Earl.  (More in 0.25)
+     - major code cleanup first attempt.
+       - spf.c -> main.c
+       - merged header.c -> main.c
+       - merged explain.c -> main.c
+       - merged smtp.c -> main.c
+       - removed error.c
+       - header files for each source
+       - spf.h now only contains globally accessable functions
+       - moved spfquery to tools directory, wrote separate makefile
+     - qmail patch updated to netqmail-1.05
+     - qmail dynamic makefile updated
+     - qmail static makefile updated
+     - Sendmail patch updated
+.25  - Applied patch from Teddy <teddy@teddy.ch> which fixes multiple issues discovered
+       by himself with my sendmail patch.  In addition Teddy has fixed CNAME recursion,
+       SASL, and some delay checks.
+     - An un-applied AMD-64 patch from Jason Richey <jasonr@bomis.com> can be found
+       in the patches/amd64 directory.
+     - An un-applied SOLARIS patch from David Summers <david@summersoft.fay.ar.us> can
+       be found in the patches/qmail directory.
+     - Moved patches from include/MTA to patches/MTA to make more sense
+     - Applied patch by Daniel Roethlisberger <daniel@roe.ch> to spfquery which fixes
+       the missing -f support.  Daniel is also kindly managing the BSD ports.
+     - Fixed whatever kludging happened in the qmail patch to cause it to not apply
+       by rebuilding it from scratch.
+.26  - Fixed misbehaviour in the macro parser when working on %% (would simply leave
+       before and not finish the parse) (RM)
+     - Fixed Parser TXT bug.  Its now more efficient and quicker to reject invalid
+       TXT records (not containing SPF information) and no longer barfs "unknown
+       mechanism".
+     
+EOF

@@ -1,0 +1,546 @@
+Debugging libSPF
+
+Enabling debugging in libSPF is quite easy. The library provides two compile time flags to define the behaviour of this debugging:
+
+_SPF_DEBUG
+_SPF_DEBUG_LOGFILE
+
+_SPF_DEBUG
+
+Setting "_SPF_DEBUG" enables the following MACRO's which can be found in util.h:
+
+#define xprintf(format,...) dbg_printf(FL_A, __FUNCTION__, format, __VA_ARGS__)
+#define xvprintf(format,...) dbg_printf(FL_B, __FUNCTION__, format, __VA_ARGS__)
+#define xpprintf(format,...) dbg_printf(FL_D, __FUNCTION__, format, __VA_ARGS__)
+
+These MACRO's all reference another MACRO, namely dbg_printf. Lets follow the trail back to the real debugging function, and explain why its done this way:
+
+#if defined _SPF_DEBUG
+#define dbg_printf _printf_dbg
+#endif
+
+#ifndef _ SPF_DEBUG
+#define dbg_printf dummy_debug
+#endif
+
+(In previous versions of libSPF debugging was enabled with the DEBUG flag but as of v1.0 RC3 this changed to strictly be _SPF_DEBUG.)
+
+As we can see these #ifdef's will assign dbg_printf to a different function depending on the presense of the _SPF_DEBUG MACRO. In its presense _printf_dbg is referenced:
+
+/* _printf_dbg
+*
+* Author: James Couzens <jcouzens@6o4.ca>
+*
+* Date: 12/25/03
+* Date: 02/18/04 (updated)
+*
+* Desc:
+* Tied to a compile time switch this can instantly and at little
+* to no real expense enable a discreet debugging with out hoards of
+* #ifdefs all over the place.
+*
+*/
+void _printf_dbg(u_int8_t level, const char *function, const char *format,...)
+{
+  char _dbg_output[MAX_DEBUG_LEN];
+  va_list argptr;
+
+#ifdef _SPF_DEBUG_LOGFILE
+  FILE *fp = NULL;
+#endif
+
+  va_start(argptr, format);
+  vsnprintf(_dbg_output, SIZEOF(_dbg_output), format, argptr);
+  va_end(argptr);
+
+  if (f_bit_set(confg.level, level))
+  {
+#ifndef _SPF_DEBUG_LOGFILE
+    printf("%s :: %s", function, _dbg_output);
+    fflush(stdout);
+#else
+  if ((fp = fopen(DEBUG_LOG_FILE, "a")) != NULL)
+  {
+    fprintf(fp, "%s", _dbg_output);
+    fclose(fp);
+  }
+#endif
+
+}
+
+return;
+}
+
+In its absense dummy_debug is a dummy function is set in its place which does nothing. This was chosen as the best way to facilitate easily enabled and extensive debugging without riddling the entire codebase with #ifdefs:
+
+/* dummy_debug
+*
+* Author: James Couzens <jcouzens@6o4.ca>
+*
+* Date: 12/25/03
+*
+* Desc:
+* dummy function thats used instead of the _printf_dbg function
+* when compiling without debugging
+*
+*
+*/
+void dummy_debug(const u_int8_t level, const char *function,
+  const char *format,...)
+{
+  return
+}
+
+_SPF_DEBUG_LOGFILE
+
+Setting this macro will help you when you are running libSPF from within a mail server. Rather than highjacking the logging of the MTA in question, or even dumping to syslog it was chosen to instead log to our own specific log file which is defined here:
+
+
+/* output file for debugging */
+#define DEBUG_LOG_FILE "/var/log/spf.log"
+
+
+You can alter this location by altering this MACRO's contents.
+
+Controlling Output and Verbosity
+
+Now that we understand how to enable debugging, where can we find it and how can it be controlled? The following flags are provided to alter the behaviour of this output.
+
+#define FL_A 2    /* xprintf */
+#define FL_B 4    /* xvprintf */
+#define FL_C 8    /* xprintf + xvprintf */
+#define FL_D 16   /* xpprintf */
+#define FL_E 32   /* xprintf + xpprintf */
+#define FL_F 64   /* xvprintf + xpprintf */
+#define FL_G 128  /* xprintf + xvprintf + xpprintf */
+
+These flags are referenced by macro's defined in util.h and spoken of when explaining the _SPF_DEBUG macro earlier in this document, but we will reference one of them again for explanation:
+
+#define xprintf(format,...) dbg_printf(FL_A, __FUNCTION__, format, __VA_ARGS__)
+
+In this case whats important is the FL_A MACRO which is what the debugging function looks at to see if it should output the debugging data it may have been passed. This is handled by the following piece of code which has been emboldened:
+
+  vsnprintf(_dbg_output, SIZEOF(_dbg_output), format, argptr);
+  va_end(argptr);
+
+if (f_bit_set(confg.level, level))
+{
+#ifndef _SPF_DEBUG_LOGFILE
+  printf("%s :: %s", function, _dbg_output);
+
+So if the bit set, falls within the bit set by your client then the output is displayed, otherwise it isn't. If the log file MACRO has been set then its written to a disk logfile instead of stdout. You don't want to be logging to stdout on your MTA because this would break all e-mail travelling through it!
+
+I take pride somewhat in being able to say that this library is C/89 compliant, however, this particular debugging implementation actually makes use functionality not available in C/89, but is in C/99. You will see this if you compile the library using the GCC flag '-pedantic':
+
+gcc -Wall -pedantic -ggdb -D_BSD_SOURCE -D_SPF_DEBUG -c -o static/main.o main.c
+In file included from main.c:46:
+util.h:79:24: warning: anonymous variadic macros were introduced in C99
+
+The point of raising this issue is that in a production environment you would compile without debugging and thus this library is indeed compliant with C/89 standard C.
+
+Examples of output
+
+Finally lets have a look at the debugging in action. When compiled without debugging output looks like:
+
+root@code3 bin # ./spfquery-static -i 10.0.0.2 -s jcouzens@6o4.ca?-h
+spftools.net
+neutral
+policy result: (neutral) from rule (?all)
+
+See
+http://spf.pobox.com/why.html?sender=jcouzens@uhfco.net&ip=10.0.0.2&receiver=spfquery
+
+When using debug level 1 (this is independent of the library and up to the client implementation to make use of and thus only results in output as chosen by the client. In spfquery we have chosen to display the contents as passed from command line:
+
+
+root@code3 bin # ./spfquery-static -i 10.0.0.2 -s jcouzens@6o4.ca -h spftools.net -v 1 
+DEBUGGING LEVEL IS: 1
+ipv4: 10.0.0.2
+sender: jcouzens@6o4.ca
+helo: spftools.net
+neutral
+policy result: (neutral) from rule (?all)
+
+See http://spf.pobox.com/why.html?sender=jcouzens@uhfco.net&ip=10.0.0.2&receiver=spfquery
+
+xprintf: normal debugging - This is the overall result of the SPF parse displaying only an overview of process.
+
+root@code3 bin # ./spfquery-static -i 10.0.0.2 -s jcouzens@6o4.ca -h spftools.net -v 2
+DEBUGGING LEVEL IS: 2
+ipv4: 10.0.0.2
+sender: jcouzens@6o4.ca
+helo: spftools.net
+SPF_init :: libspf initialized succesfully. (724 bytes allocated)
+SPF_smtp_helo :: called with (spftools.net)
+SPF_smtp_from :: FROM: (jcouzens@6o4.ca) (called with: jcouzens@6o4.ca)
+SPF_smtp_from :: CUR DOM: (6o4.ca)
+SPF_policy_main_rec :: (QID: 0) :: Error parsing ANSWER(s)
+SPF_parse_policy :: (QID: 0) :: about to parse (v=spf1 redirect=uhfco.net ) of len: 26 (none)
+SPF_parse_policy :: (QID: 0) :: SPF Policy Mechanism: 1 (token: v=spf1) (pos: 6)
+SPF_parse_policy :: (QID: 0) :: policy mechanism is version (v=spf1)
+SPF_parse_policy :: (QID: 0) :: SPF Policy Mechanism: 10 (token: redirect=uhfco.net) (pos: 18)
+SPF_parse_policy :: (QID: 0) :: policy mechanism is redirect (redirect=uhfco.net)
+SPF_policy_main_rec :: (QID: 1) :: Error parsing ANSWER(s)
+SPF_parse_policy :: (QID: 1) :: about to parse (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 a:cccp.6o4.ca a:moscow.6o4.ca a:tidy.obscurity.org ?all ) of len: 106 (none)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 1 (token: v=spf1) (pos: 6)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is version (v=spf1)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 5 (token: mx) (pos: 2)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is mx (mx)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 6 (token: ptr) (pos: 3)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is ptr (ptr)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 7 (token: ip4:24.207.1.85) (pos: 15)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is ip4 (ip4:24.207.1.85)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 7 (token: ip4:24.207.0.192/26) (pos: 19)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is ip4 (ip4:24.207.0.192/26)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 4 (token: a:cccp.6o4.ca) (pos: 13)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is A (a:cccp.6o4.ca)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 4 (token: a:moscow.6o4.ca) (pos: 15)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is A (a:moscow.6o4.ca)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 4 (token: a:tidy.obscurity.org) (pos: 20)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is A (a:tidy.obscurity.org)
+SPF_parse_policy :: (QID: 1) :: SPF Policy Mechanism: 2 (token: all) (pos: 4)
+SPF_parse_policy :: (QID: 1) :: policy mechanism is all (all) policy: (2)
+MACRO_process :: called with (S) and len: 2
+MACRO_process :: local: (jcouzens) cur dom (uhfco.net)
+MACRO_process :: called with (I) and len: 2
+MACRO_process :: called with (xR) and len: 3
+MACRO_expand :: Allocated 89 bytes for return buf
+SPF_policy_main_rec :: (QID: 1) :: Return policy 5 on mech: (?all) with outcome: (neutral)
+SPF_policy_main_rec :: (QID: 1) :: Return policy 5 on mech: (?all) with outcome: (neutral)
+neutral
+policy result: (neutral) from rule (?all)
+
+See http://spf.pobox.com/why.html?sender=jcouzens@uhfco.net&ip=10.0.0.2&receiver=spfquery
+
+
+xvprintf: verbose debugging: This debugging level is just like the name says, its exceptionally verbose, detailing every single operation along the way such as allocating memory, deallocating, expanding macros' and so forth.
+
+root@code3 bin # ./spfquery-static -i 10.0.0.2 -s jcouzens@6o4.ca -h spftools.net -v 4
+DEBUGGING LEVEL IS: 4
+ipv4:?? 10.0.0.2
+sender: jcouzens@6o4.ca
+helo:?? spftools.net
+SPF_init :: Called with: (spfquery) (10.0.0.2) ((null)) ((null)) ((null)) 0:0
+UTIL_strndup :: Allocated 24 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1 a/24 mx/24 ptr )
+UTIL_strndup :: Allocated 43 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1 include:spf.trusted-forwarder.org )
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (spfquery)
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (10.0.0.2)
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (spfquery)
+UTIL_free :: Free address 0x80603a8 by SPF_init on line 177 (main.c)
+UTIL_assoc_prefix :: (QID: 0) :: Stored SPF_NEUTRAL (5) (5)
+UTIL_strdup :: Returning string: (spftools.net)
+UTIL_free :: Unable to free() on NULL pointer at main.c:1086 in SPF_smtp_from; address 0x0.
+UTIL_free :: Unable to free() on NULL pointer at main.c:1087 in SPF_smtp_from; address 0x0.
+UTIL_strdup :: Returning string: (jcouzens@6o4.ca)
+UTIL_strdup :: Returning string: (6o4.ca)
+SPF_smtp_from :: LOCAL: (jcouzens) DOMAIN (6o4.ca) SENDER: (jcouzens@6o4.ca)
+DNS_query :: Called with (6o4.ca) and type: 5
+UTIL_assoc_prefix :: (QID: 0) :: Stored SPF_NONE (1) (1)
+DNS_query :: policy result: (none) from rule ()
+DNS_query :: Called with (6o4.ca) and type: 16
+DNS_query :: Received packet size of 105 bytes which contains 1 answers.
+DNS_query :: ANSWERS: 1
+DNS_query :: QUESTIONS: 1
+DNS_txt_answer :: Answer 1 has length 26. (26)
+DNS_txt_answer :: Answer Data: (v=spf1 redirect=uhfco.net ) len: 26
+DNS_txt_answer :: REALLOCATE memory: 26 bytes
+DNS_txt_answer :: RR_DATA: (v=spf1 redirect=uhfco.net )
+DNS_txt_answer :: Returning with valid SPFv1 record
+UTIL_assoc_prefix :: (QID: 0) :: Stored SPF_NONE (1) (1)
+UTIL_strndup :: Allocated 27 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1 redirect=uhfco.net )
+UTIL_index :: Found search char: ( ); Returning: (6)
+UTIL_strndup :: Allocated 7 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1)
+UTIL_is_spf_result :: Called with char (v)
+UTIL_get_policy_mech :: Called with: (v=spf1)
+UTIL_get_policy_mech :: Returning 1 (VERSION)
+UTIL_index :: Found search char: (=); Returning: (1)
+SPF_parse_policy :: (QID: 0) :: SPF Version defined as: 1
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (18)
+UTIL_strndup :: Allocated 19 bytes of memory.
+UTIL_strndup :: Returning string: (redirect=uhfco.net)
+UTIL_is_spf_result :: Called with char (r)
+UTIL_get_policy_mech :: Called with: (redirect=uhfco.net)
+UTIL_get_policy_mech :: Returning 10 (REDIRECT)
+UTIL_is_macro :: Called with char (uhfco.net)
+UTIL_free :: Free address 0x80603f8 by SPF_parse_policy on line 780 (main.c)
+UTIL_strndup :: Allocated 10 bytes of memory.
+UTIL_strndup :: Returning string: (uhfco.net)
+DNS_query :: Called with (uhfco.net) and type: 5
+UTIL_assoc_prefix :: (QID: 1) :: Stored SPF_NONE (1) (1)
+DNS_query :: policy result: (none) from rule (redirect=uhfco.net)
+DNS_query :: Called with (uhfco.net) and type: 16
+DNS_query :: Received packet size of 213 bytes which contains 1 answers.
+DNS_query :: ANSWERS: 1
+DNS_query :: QUESTIONS: 1
+DNS_txt_answer :: Answer 1 has length 106. (106)
+DNS_txt_answer :: Answer Data: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 a:cccp.6o4.ca a:moscow.6o4.ca a:tidy.obscurity.org ?all ) len: 106
+DNS_txt_answer :: REALLOCATE memory: 106 bytes
+DNS_txt_answer :: RR_DATA: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 a:cccp.6o4.ca a:moscow.6o4.ca a:tidy.obscurity.org ?all )
+DNS_txt_answer :: Returning with valid SPFv1 record
+UTIL_assoc_prefix :: (QID: 1) :: Stored SPF_NONE (1) (1)
+UTIL_strndup :: Allocated 107 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 a:cccp.6o4.ca a:moscow.6o4.ca a:tidy.obscurity.org ?all )
+UTIL_index :: Found search char: ( ); Returning: (6)
+UTIL_strndup :: Allocated 7 bytes of memory.
+UTIL_strndup :: Returning string: (v=spf1)
+UTIL_is_spf_result :: Called with char (v)
+UTIL_get_policy_mech :: Called with: (v=spf1)
+UTIL_get_policy_mech :: Returning 1 (VERSION)
+UTIL_index :: Found search char: (=); Returning: (1)
+SPF_parse_policy :: (QID: 1) :: SPF Version defined as: 1
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (2)
+UTIL_strndup :: Allocated 3 bytes of memory.
+UTIL_strndup :: Returning string: (mx)
+UTIL_is_spf_result :: Called with char (m)
+UTIL_get_policy_mech :: Called with: (mx)
+UTIL_get_policy_mech :: Returning 5 (MX)
+DNS_query :: Called with (uhfco.net) and type: 15
+DNS_query :: Received packet size of 167 bytes which contains 2 answers.
+DNS_query :: ANSWERS: 2
+DNS_query :: QUESTIONS: 1
+DNS_mx_answer :: MX: mx2.uhfco.net Preference: 20
+DNS_mx_answer :: REALLOCATE memory: 15 bytes
+DNS_mx_answer :: MX: mx1.uhfco.net Preference: 10
+DNS_mx_answer :: REALLOCATE memory: 29 bytes
+UTIL_mx_cmp :: rr_data is: (mx2.uhfco.net mx1.uhfco.net)
+UTIL_strndup :: Allocated 16 bytes of memory.
+UTIL_strndup :: Returning string: (10.0.0.2)
+UTIL_mx_cmp :: TOKEN: (mx2.uhfco.net)
+UTIL_validate_hostname :: Called with: (134611848) and (mx2.uhfco.net)
+UTIL_strndup :: Allocated 17 bytes of memory.
+UTIL_strndup :: Returning string: (24.207.0.211)
+UTIL_validate_hostname :: CLI: 24.207.0.211 (3540045592) SRV: 10.0.0.2 (33554442)
+UTIL_free :: Free address 0x8061900 by UTIL_validate_hostname on line 1797 (util.c)
+UTIL_mx_cmp :: TOKEN: (mx1.uhfco.net)
+UTIL_validate_hostname :: Called with: (134611848) and (mx1.uhfco.net)
+UTIL_strndup :: Allocated 17 bytes of memory.
+UTIL_strndup :: Returning string: (24.207.0.211)
+UTIL_validate_hostname :: CLI: 24.207.0.211 (3540045592) SRV: 10.0.0.2 (33554442)
+UTIL_free :: Free address 0x8061900 by UTIL_validate_hostname on line 1797 (util.c)
+UTIL_free :: Free address 0x80605b8 by UTIL_mx_cmp on line 768 (util.c)
+UTIL_free :: Free address 0x8060590 by UTIL_mx_cmp on line 769 (util.c)
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (3)
+UTIL_strndup :: Allocated 4 bytes of memory.
+UTIL_strndup :: Returning string: (ptr)
+UTIL_is_spf_result :: Called with char (p)
+UTIL_get_policy_mech :: Called with: (ptr)
+UTIL_get_policy_mech :: Returning 6 (PTR)
+UTIL_ptr_cmp :: Called with (ptr)
+UTIL_rev_addr :: Called with: (10.0.0.2) len: 8
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (10.0.0.2)
+UTIL_rev_addr :: token : (10)
+UTIL_rev_addr :: token : (0)
+UTIL_rev_addr :: token : (0)
+UTIL_rev_addr :: token : (2)
+UTIL_free :: Free address 0x8060b38 by UTIL_rev_addr on line 1528 (util.c)
+UTIL_rev_addr :: Returning reversed ip: 2.0.0.10.in-addr.arpa
+UTIL_ptr_cmp :: address: 2.0.0.10.in-addr.arpa
+UTIL_strndup :: Allocated 10 bytes of memory.
+UTIL_strndup :: Returning string: (uhfco.net)
+DNS_query :: Called with (2.0.0.10.in-addr.arpa) and type: 12
+UTIL_assoc_prefix :: (QID: 1) :: Stored SPF_NONE (1) (1)
+DNS_query :: policy result: (none) from rule (ptr)
+UTIL_ptr_cmp :: PTR lookup failed: (none) (policy result: (none) from rule (ptr)
+)
+UTIL_free :: Free address 0x8061918 by UTIL_ptr_cmp on line 955 (util.c)
+UTIL_free :: Free address 0x8060b38 by UTIL_ptr_cmp on line 956 (util.c)
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (15)
+UTIL_strndup :: Allocated 16 bytes of memory.
+UTIL_strndup :: Returning string: (ip4:24.207.1.85)
+UTIL_is_spf_result :: Called with char (i)
+UTIL_get_policy_mech :: Called with: (ip4:24.207.1.85)
+UTIL_get_policy_mech :: Returning 7 (IP4)
+UTIL_expand_ip :: Called with string: (ip4:24.207.1.85)
+UTIL_index :: Found search char: (:); Returning: (3)
+UTIL_expand_ip :: Unable to get position on token (24.207.1.85), assuming /32 cidr block
+UTIL_strndup :: Allocated 12 bytes of memory.
+UTIL_strndup :: Returning string: (24.207.1.85)
+UTIL_free :: Free address 0x8060b38 by UTIL_expand_ip on line 1429 (util.c)
+UTIL_expand_ip :: CIDR: (32) IP: (24.207.1.85)
+SPF_parse_policy :: (QID: 1) :: POL: 1426181912 (ip4:24.207.1.85) PEER: 33554442 (10.0.0.2)
+UTIL_cidr_cmp :: POL: 1426181912 PEER: 33554442 CIDR: 32
+UTIL_cidr_cmp :: 33554442 and 1426181912 using 32 cidr do not match
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 717 (main.c)
+UTIL_free :: Free address 0x80605b8 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (19)
+UTIL_strndup :: Allocated 20 bytes of memory.
+UTIL_strndup :: Returning string: (ip4:24.207.0.192/26)
+UTIL_is_spf_result :: Called with char (i)
+UTIL_get_policy_mech :: Called with: (ip4:24.207.0.192/26)
+UTIL_get_policy_mech :: Returning 7 (IP4)
+UTIL_expand_ip :: Called with string: (ip4:24.207.0.192/26)
+UTIL_index :: Found search char: (:); Returning: (3)
+UTIL_index :: Found search char: (/); Returning: (12)
+UTIL_strndup :: Allocated 13 bytes of memory.
+UTIL_strndup :: Returning string: (24.207.0.192)
+UTIL_free :: Free address 0x8061900 by UTIL_expand_ip on line 1429 (util.c)
+UTIL_expand_ip :: CIDR: (26) IP: (24.207.0.192)
+SPF_parse_policy :: (QID: 1) :: POL: 3221278488 (ip4:24.207.0.192/26) PEER: 33554442 (10.0.0.2)
+UTIL_cidr_cmp :: POL: 3221278488 PEER: 33554442 CIDR: 26
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 717 (main.c)
+UTIL_free :: Free address 0x80605b8 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (13)
+UTIL_strndup :: Allocated 14 bytes of memory.
+UTIL_strndup :: Returning string: (a:cccp.6o4.ca)
+UTIL_is_spf_result :: Called with char (a)
+UTIL_get_policy_mech :: Called with: (a:cccp.6o4.ca)
+UTIL_get_policy_mech :: Returning 4 (A)
+UTIL_a_cmp :: Called with (a:cccp.6o4.ca) and cidr: 32
+UTIL_strndup :: Allocated 14 bytes of memory.
+UTIL_strndup :: Returning string: (a:cccp.6o4.ca)
+UTIL_index :: Found search char: (:); Returning: (1)
+UTIL_a_cmp :: Checking IP: 1203327256
+UTIL_cidr_cmp :: POL: 1203327256 PEER: 33554442 CIDR: 32
+UTIL_cidr_cmp :: 33554442 and 1203327256 using 32 cidr do not match
+UTIL_free :: Free address 0x8060488 by UTIL_a_cmp on line 891 (util.c)
+UTIL_free :: Free address 0x8061900 by UTIL_a_cmp on line 892 (util.c)
+UTIL_free :: Free address 0x80605b8 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (15)
+UTIL_strndup :: Allocated 16 bytes of memory.
+UTIL_strndup :: Returning string: (a:moscow.6o4.ca)
+UTIL_is_spf_result :: Called with char (a)
+UTIL_get_policy_mech :: Called with: (a:moscow.6o4.ca)
+UTIL_get_policy_mech :: Returning 4 (A)
+UTIL_a_cmp :: Called with (a:moscow.6o4.ca) and cidr: 32
+UTIL_strndup :: Allocated 16 bytes of memory.
+UTIL_strndup :: Returning string: (a:moscow.6o4.ca)
+UTIL_index :: Found search char: (:); Returning: (1)
+UTIL_a_cmp :: Checking IP: 3272857807
+UTIL_cidr_cmp :: POL: 3272857807 PEER: 33554442 CIDR: 32
+UTIL_cidr_cmp :: 33554442 and 3272857807 using 32 cidr do not match
+UTIL_free :: Free address 0x8060488 by UTIL_a_cmp on line 891 (util.c)
+UTIL_free :: Free address 0x8061900 by UTIL_a_cmp on line 892 (util.c)
+UTIL_free :: Free address 0x80605b8 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (20)
+UTIL_strndup :: Allocated 21 bytes of memory.
+UTIL_strndup :: Returning string: (a:tidy.obscurity.org)
+UTIL_is_spf_result :: Called with char (a)
+UTIL_get_policy_mech :: Called with: (a:tidy.obscurity.org)
+UTIL_get_policy_mech :: Returning 4 (A)
+UTIL_a_cmp :: Called with (a:tidy.obscurity.org) and cidr: 32
+UTIL_strndup :: Allocated 21 bytes of memory.
+UTIL_strndup :: Returning string: (a:tidy.obscurity.org)
+UTIL_index :: Found search char: (:); Returning: (1)
+UTIL_a_cmp :: Checking IP: 2561197890
+UTIL_cidr_cmp :: POL: 2561197890 PEER: 33554442 CIDR: 32
+UTIL_cidr_cmp :: 33554442 and 2561197890 using 32 cidr do not match
+UTIL_free :: Free address 0x8060488 by UTIL_a_cmp on line 891 (util.c)
+UTIL_free :: Free address 0x8061918 by UTIL_a_cmp on line 892 (util.c)
+UTIL_free :: Free address 0x8060590 by SPF_parse_policy on line 860 (main.c)
+UTIL_index :: Found search char: ( ); Returning: (4)
+UTIL_strndup :: Allocated 5 bytes of memory.
+UTIL_strndup :: Returning string: (?all)
+UTIL_is_spf_result :: Called with char (?)
+UTIL_get_mech_prefix :: (QID: 1) :: Returning SPF_NEUTRAL (?all) 5
+UTIL_get_policy_mech :: Called with: (all)
+UTIL_get_policy_mech :: Returning 2 (ALL)
+UTIL_assoc_prefix :: (QID: 1) :: Stored SPF_NEUTRAL (5) (5)
+UTIL_free :: Free address 0x8060488 by SPF_parse_policy on line 860 (main.c)
+UTIL_assoc_prefix :: (QID: 1) :: Entering function (5) (?all)
+UTIL_assoc_prefix :: (QID: 1) :: Stored SPF_NEUTRAL (5) (5)
+UTIL_free :: Free address 0x8060520 by SPF_parse_policy on line 868 (main.c)
+UTIL_free :: Free address 0x80604b0 by SPF_policy_main_rec on line 331 (main.c)
+UTIL_strndup :: Allocated 69 bytes of memory.
+UTIL_strndup :: Returning string: (See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR})
+UTIL_index :: Found search char: (%); Returning: (41)
+MACRO_addbuf :: Called with (See http://spf.pobox.com/why.html?sender=) 42 (41) bytes.
+MACRO_addbuf :: Added (See http://spf.pobox.com/why.html?sender=) to node of len: 42)
+MACRO_expand :: Freeing s_macro temp buf (See http://spf.pobox.com/why.html?sender=)
+UTIL_free :: Free address 0x8060500 by MACRO_expand on line 242 (macro.c)
+MACRO_expand :: Remaining buffer (%{S}&ip=%{I}&receiver=%{xR})
+UTIL_index :: Found search char: (}); Returning: (1)
+MACRO_expand :: Actual macro (S)
+MACRO_process :: 's' expands to: (jcouzens@uhfco.net)
+UTIL_strndup :: Allocated 20 bytes of memory.
+UTIL_strndup :: Returning string: (jcouzens@uhfco.net)
+MACRO_expand :: Macro expanded to: (jcouzens@uhfco.net) 18 bytes
+MACRO_addbuf :: Called with (jcouzens@uhfco.net) 18 (18) bytes.
+MACRO_addbuf :: Added (jcouzens@uhfco.net) to node of len: 18)
+UTIL_free :: Free address 0x8061900 by MACRO_expand on line 162 (macro.c)
+MACRO_expand :: Remaining buffer (&ip=%{I}&receiver=%{xR})
+UTIL_index :: Found search char: (%); Returning: (4)
+MACRO_addbuf :: Called with (&ip=) 5 (4) bytes.
+MACRO_addbuf :: Added (&ip=) to node of len: 5)
+MACRO_expand :: Freeing s_macro temp buf (&ip=)
+UTIL_free :: Free address 0x8061938 by MACRO_expand on line 242 (macro.c)
+MACRO_expand :: Remaining buffer (%{I}&receiver=%{xR})
+UTIL_index :: Found search char: (}); Returning: (1)
+MACRO_expand :: Actual macro (I)
+MACRO_process :: 'i' expands to: (10.0.0.2)
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (10.0.0.2)
+MACRO_expand :: Macro expanded to: (10.0.0.2) 8 bytes
+MACRO_addbuf :: Called with (10.0.0.2) 8 (8) bytes.
+MACRO_addbuf :: Added (10.0.0.2) to node of len: 8)
+UTIL_free :: Free address 0x8061938 by MACRO_expand on line 162 (macro.c)
+MACRO_expand :: Remaining buffer (&receiver=%{xR})
+UTIL_index :: Found search char: (%); Returning: (10)
+MACRO_addbuf :: Called with (&receiver=) 11 (10) bytes.
+MACRO_addbuf :: Added (&receiver=) to node of len: 11)
+MACRO_expand :: Freeing s_macro temp buf (&receiver=)
+UTIL_free :: Free address 0x8061938 by MACRO_expand on line 242 (macro.c)
+MACRO_expand :: Remaining buffer (%{xR})
+UTIL_index :: Found search char: (}); Returning: (2)
+MACRO_expand :: Actual macro (xR)
+UTIL_strndup :: Allocated 9 bytes of memory.
+UTIL_strndup :: Returning string: (spfquery)
+MACRO_expand :: Macro expanded to: (spfquery) 8 bytes
+MACRO_addbuf :: Called with (spfquery) 8 (8) bytes.
+MACRO_addbuf :: Added (spfquery) to node of len: 8)
+UTIL_free :: Free address 0x8061938 by MACRO_expand on line 162 (macro.c)
+MACRO_expand :: Remaining buffer ()
+MACRO_expand :: NODE: (See http://spf.pobox.com/why.html?sender=) LEN: 42
+UTIL_free :: Free address 0x8060530 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x8060b38 by MACRO_expand on line 269 (macro.c)
+MACRO_expand :: NODE: (jcouzens@uhfco.net) LEN: 18
+UTIL_free :: Free address 0x8060570 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x8060560 by MACRO_expand on line 269 (macro.c)
+MACRO_expand :: NODE: (&ip=) LEN: 5
+UTIL_free :: Free address 0x8061958 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x8061948 by MACRO_expand on line 269 (macro.c)
+MACRO_expand :: NODE: (10.0.0.2) LEN: 8
+UTIL_free :: Free address 0x8061978 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x8061968 by MACRO_expand on line 269 (macro.c)
+MACRO_expand :: NODE: (&receiver=) LEN: 11
+UTIL_free :: Free address 0x8061998 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x8061988 by MACRO_expand on line 269 (macro.c)
+MACRO_expand :: NODE: (spfquery) LEN: 8
+UTIL_free :: Free address 0x80619b8 by MACRO_expand on line 267 (macro.c)
+UTIL_free :: Free address 0x80619a8 by MACRO_expand on line 269 (macro.c)
+UTIL_free :: Free address 0x80604b0 by MACRO_expand on line 272 (macro.c)
+UTIL_free :: Free address 0x8060488 by MACRO_expand on line 273 (macro.c)
+MACRO_expand :: Returning expanded macro: (See http://spf.pobox.com/why.html?sender=jcouzens@uhfco.net&ip=10.0.0.2&receiver=spfquery)
+SPF_parse_policy :: (QID: 1) :: redirect returned result 5 (?all)
+UTIL_free :: Free address 0x8060498 by SPF_parse_policy on line 860 (main.c)
+UTIL_free :: Free address 0x8060468 by SPF_parse_policy on line 873 (main.c)
+UTIL_free :: Free address 0x8060448 by SPF_policy_main_rec on line 331 (main.c)
+neutral
+policy result: (neutral) from rule (?all)
+
+See http://spf.pobox.com/why.html?sender=jcouzens@uhfco.net&ip=10.0.0.2&receiver=spfquery
+UTIL_free :: Free address 0x8060378 by SPF_close on line 219 (main.c)
+UTIL_free :: Free address 0x80603c8 by SPF_close on line 220 (main.c)
+UTIL_free :: Free address 0x80603e0 by SPF_close on line 221 (main.c)
+UTIL_free :: Free address 0x80603f8 by SPF_close on line 222 (main.c)
+UTIL_free :: Free address 0x8060388 by SPF_close on line 223 (main.c)
+UTIL_free :: Unable to free() on NULL pointer at main.c:224 in SPF_close; address 0x0.
+UTIL_free :: Free address 0x80605b8 by SPF_close on line 225 (main.c)
+UTIL_free :: Free address 0x8060348 by SPF_close on line 226 (main.c)
+UTIL_free :: Free address 0x8060328 by SPF_close on line 227 (main.c)
+UTIL_free :: Free address 0x80619c8 by SPF_close on line 228 (main.c)
+UTIL_free :: Free address 0x8060398 by SPF_close on line 229 (main.c)
+UTIL_free :: Free address 0x8060050 by SPF_close on line 231 (main.c)
+
+xpprintf: profile debugging output - Profiling output has been removed in favour of using a substantially more powerful and accurate system profiler.

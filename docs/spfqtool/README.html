@@ -1,0 +1,542 @@
+<html>
+  <head>
+    <title>README</title>
+  </head>
+
+  <body>
+    <h2>README</h2>
+    <pre>
+
+File:   README
+Author: James Couzens &lt;jcouzens@codeshare.ca&gt;
+Desc:   README file for working with the libSPF Query Tool
+Date:   Wed Oct 20 11:13:32 PDT 2004 - Updated
+
+=======================================================================================
+
+The <a href="spfqtool.html" target="_self">libSPF Query Tool source</a> code was written
+with three purposes in mind.  1) To facilitate a binary to test RFC compliance.  2) To
+provide would-be developers of the libSPF library with an example of how to implenent it.
+3) To provide end-users with a tool to aide in testing their SPF deployment.
+
+This tool is exceptionally easy to use and at the same time is equally powerful.
+
+spfqtool usage:
+
+spfqtool [b|d|e|i|s|t|h|v]
+
+-b [0,1]   - Enable Best Guess support (True (0) or False (1))
+-d [x]     - DEBUG where x is a number between 1 and 255
+-e [0,1]   - Enable SPF explanation (True (0) or False (1))
+-h [host]  - HELO hostname to test with
+-i [addr]  - IP Address where the fake connection will come from
+-s [email] - What email address to test with
+-t [0,1]   - Enable Trusted Forwarder support (True (0) or False (1))
+-v         - Display version string
+
+Example: ./spfqtool -i 10.0.0.2 -s jcouzens@6o4.ca -h spftools.net
+
+Minimum required arguments are 'i', and 's'
+
+The example above yields the following results:
+
+SPF short result:   neutral     
+SPF verbose result: policy result: (neutral) from rule (?all)
+RFC2822 header:     Received-SPF: neutral (spftools.net: domain of jcouzens@6o4.ca is neutral about designating 10.0.0.2 as permitted sender)
+
+with minimal debugging enabled:
+
+SPF Query Tool v0.3 - James Couzens <jcouzens@codeshare.ca>
+[DEBUG]: Debugging level:    1  
+[DEBUG]: RFC2821 Mail From:  jcouzens@6o4.ca
+[DEBUG]: RFC2821 HELO:       spftools.net
+[DEBUG]: Purported address:  10.0.0.2
+[DEBUG]: SPF Explanation:    Disabled
+[DEBUG]: Trusted Forwarder:  Disabled
+[DEBUG]: Best Guess:         Disabled
+                                
+SPF short result:   neutral     
+SPF verbose result: policy result: (neutral) from rule (?all)
+RFC2822 header:     Received-SPF: neutral (spftools.net: domain of jcouzens@6o4.ca is neutral about designating 10.0.0.2 as permitted sender)
+
+and with mega debugging enabled:
+
+SPF Query Tool v0.3 - James Couzens <jcouzens@codeshare.ca>
+[DEBUG]: Debugging level:    255
+[DEBUG]: RFC2821 Mail From:  jcouzens@6o4.ca
+[DEBUG]: RFC2821 HELO:       spftools.net
+[DEBUG]: Purported address:  10.0.0.2
+[DEBUG]: SPF Explanation:    Disabled
+[DEBUG]: Trusted Forwarder:  Disabled
+[DEBUG]: Best Guess:         Disabled
+
+[UTIL_strndup :: util.c->416]; called with string: (spftools.net) of len: 256
+[UTIL_strndup :: util.c->427]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (spftools.net)
+[UTIL_strndup :: util.c->416]; called with string: (spftools.net) of len: 256
+[UTIL_strndup :: util.c->427]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (spftools.net)
+[SPF_init :: main.c->160]; Called with: (spftools.net) (10.0.0.2) (NULL) (NULL) (NULL) 0:0
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 a/24 mx/24 ptr ) of len: 24
+[UTIL_strndup :: util.c->427]; Allocated 23 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1 a/24 mx/24 ptr )
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 include:spf.trusted-forwarder.org ) of len: 43
+[UTIL_strndup :: util.c->427]; Allocated 42 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1 include:spf.trusted-forwarder.org )
+[UTIL_strndup :: util.c->416]; called with string: (10.0.0.2) of len: 17
+[UTIL_strndup :: util.c->427]; Allocated 9 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (10.0.0.2)
+[UTIL_free :: util.c->573]; Free address 0x804b420 by SPF_init on line 288 (main.c)
+[UTIL_assoc_prefix :: util.c->1527]; Stored SPF_NEUTRAL (5) (5)
+[SPF_init :: main.c->305]; libspf initialized succesfully. (748 bytes allocated)
+[SPF_smtp_helo :: main.c->1647]; called with (spftools.net)
+[UTIL_strdup :: util.c->467]; leaving function; returning string: (spftools.net)
+[UTIL_free :: util.c->567]; Unable to free() on NULL pointer at main.c:1689 in SPF_smtp_from; address 0x0.
+[UTIL_free :: util.c->567]; Unable to free() on NULL pointer at main.c:1690 in SPF_smtp_from; address 0x0.
+[UTIL_strndup :: util.c->416]; called with string: (jcouzens@6o4.ca) of len: 4096
+[UTIL_strndup :: util.c->427]; Allocated 16 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (jcouzens@6o4.ca)
+[SPF_smtp_from :: main.c->1736]; MAIL-FROM: (jcouzens@6o4.ca) (called with: jcouzens@6o4.ca)
+[UTIL_strndup :: util.c->416]; called with string: (6o4.ca) of len: 4096
+[UTIL_strndup :: util.c->427]; Allocated 7 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (6o4.ca)
+[SPF_smtp_from :: main.c->1754]; Current domain: (6o4.ca)
+[SPF_smtp_from :: main.c->1764]; local-part: (jcouzens); domain: (6o4.ca); sender: (jcouzens@6o4.ca)
+[SPF_policy_main :: main.c->427]; [0] current domain: (6o4.ca)
+[SPF_policy_main :: main.c->430]; [0] redirect buffer: (NULL)
+[SPF_policy_main :: main.c->443]; recursion level is now: 1
+[_SPF_policy_main_rec :: main.c->679]; entering function with current domain: (6o4.ca)
+[DNS_query :: dns.c->240]; Called with (6o4.ca) and type: 16
+[DNS_query :: dns.c->314]; Received packet size of 105 bytes which contains 1 answers.
+[DNS_query :: dns.c->316]; ANSWERS: 1
+[DNS_query :: dns.c->317]; QUESTIONS: 1
+[DNS_txt_answer :: dns.c->507]; entering function
+[UTIL_free :: util.c->573]; Free address 0x804d8b0 by _pprintf_dbg on line 152 (util.c)
+[DNS_txt_answer :: dns.c->565]; substr_len: 25
+[DNS_txt_answer :: dns.c->566]; rd_ptr: (v=spf1 redirect=uhfco.net�
+                                                                   )
+[DNS_txt_answer :: dns.c->567]; rd_len: 25
+[DNS_txt_answer :: dns.c->590]; Answer 1 (v=spf1 redirect=uhfco.net ) has length 0. (26)
+[DNS_txt_answer :: dns.c->592]; Answer Data: (�
+                                               ) len: 0
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (2)
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (1)
+[DNS_txt_answer :: dns.c->597]; Returning DNS response: (v=spf1 redirect=uhfco.net )
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by DNS_query on line 453 (dns.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by DNS_query on line 454 (dns.c)
+[DNS_query :: dns.c->456]; returning rr_data: (v=spf1 redirect=uhfco.net )
+[_SPF_policy_main_rec :: main.c->701]; DNS_query returned with answer: (v=spf1 redirect=uhfco.net )
+[_SPF_pre_parse_policy :: main.c->827]; Returning with valid SPFv1 record: (v=spf1 redirect=uhfco.net )
+[SPF_parse_policy :: main.c->917]; about to parse (v=spf1 redirect=uhfco.net ) of len: 26 (neutral)
+[SPF_parse_policy :: main.c->919]; there are 0 nodes in INCLUDE list
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 redirect=uhfco.net ) of len: 27
+[UTIL_strndup :: util.c->427]; Allocated 27 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1 redirect=uhfco.net )
+[UTIL_index :: util.c->616]; called with string: (v=spf1 redirect=uhfco.net ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (6)
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 redirect=uhfco.net ) of len: 7
+[UTIL_strndup :: util.c->421]; Allocated 7 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1)
+[UTIL_is_spf_result :: util.c->880]; called with char (v)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (v=spf1)
+[UTIL_get_policy_mech :: util.c->1257]; leaving function; returning 1 (VERSION)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 1 (token: v=spf1) (pos: 6)
+[SPF_parse_policy :: main.c->1001]; policy mechanism is version (v=spf1)
+[UTIL_index :: util.c->616]; called with string: (v=spf1); char: =
+[UTIL_index :: util.c->623]; Found search char: (=); Returning: (1)
+[SPF_parse_policy :: main.c->1019]; SPF Version defined as: 1
+[UTIL_free :: util.c->573]; Free address 0x804d4c8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (redirect=uhfco.net ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (18)
+[UTIL_strndup :: util.c->416]; called with string: (redirect=uhfco.net ) of len: 19
+[UTIL_strndup :: util.c->421]; Allocated 19 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (redirect=uhfco.net)
+[UTIL_is_spf_result :: util.c->880]; called with char (r)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (redirect=uhfco.net)
+[UTIL_get_policy_mech :: util.c->1312]; leaving function; returning 10 (REDIRECT)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 10 (token: redirect=uhfco.net) (pos: 18)
+[SPF_parse_policy :: main.c->1300]; modifier is redirect (redirect=uhfco.net)
+[UTIL_is_macro :: util.c->917]; called with string (uhfco.net)
+[UTIL_is_macro :: util.c->932]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[SPF_parse_policy :: main.c->1326]; setting redirect_buf to uhfco.net
+[UTIL_strndup :: util.c->416]; called with string: (uhfco.net) of len: 4096
+[UTIL_strndup :: util.c->427]; Allocated 10 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (uhfco.net)
+[UTIL_free :: util.c->573]; Free address 0x804d4c8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1396 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d8b0 by _SPF_policy_main_rec on line 707 (main.c)
+[_SPF_policy_main_rec :: main.c->736]; leaving function; returning (5)
+[SPF_policy_main :: main.c->456]; [1] result of SPF parse is 5
+[SPF_policy_main :: main.c->467]; include buffer: ((null))
+[SPF_policy_main :: main.c->480]; [1] tmp is holding the current domain: (6o4.ca)
+[SPF_policy_main :: main.c->592]; found a redirect buffer with valid data (uhfco.net)
+[SPF_policy_main :: main.c->597]; current domain is now: (uhfco.net) from REDIRECT
+[SPF_policy_main :: main.c->427]; [1] current domain: (uhfco.net)
+[SPF_policy_main :: main.c->430]; [1] redirect buffer: (NULL)
+[SPF_policy_main :: main.c->443]; recursion level is now: 2
+[_SPF_policy_main_rec :: main.c->679]; entering function with current domain: (uhfco.net)
+[DNS_query :: dns.c->240]; Called with (uhfco.net) and type: 16
+[DNS_query :: dns.c->314]; Received packet size of 218 bytes which contains 1 answers.
+[DNS_query :: dns.c->316]; ANSWERS: 1
+[DNS_query :: dns.c->317]; QUESTIONS: 1
+[DNS_txt_answer :: dns.c->507]; entering function
+[UTIL_free :: util.c->573]; Free address 0x804d8f8 by _pprintf_dbg on line 152 (util.c)
+[DNS_txt_answer :: dns.c->565]; substr_len: 110
+[DNS_txt_answer :: dns.c->566]; rd_ptr: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.                                                     
+org ?all�
+         )
+[DNS_txt_answer :: dns.c->567]; rd_len: 110
+[DNS_txt_answer :: dns.c->590]; Answer 1 (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity                                                     
+.org ?all ) has length 0. (111)
+[DNS_txt_answer :: dns.c->592]; Answer Data: (�
+                                               ) len: 0
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (2)
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (2)
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (1)
+[DNS_txt_answer :: dns.c->537]; Ignoring record not of T_TXT type. (1)
+[DNS_txt_answer :: dns.c->597]; Returning DNS response: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a                                                     
+:tidy.obscurity.org ?all )
+[UTIL_free :: util.c->573]; Free address 0x804d4f0 by DNS_query on line 453 (dns.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by DNS_query on line 454 (dns.c)
+[DNS_query :: dns.c->456]; returning rr_data: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obsc                                                     
+urity.org ?all )
+[_SPF_policy_main_rec :: main.c->701]; DNS_query returned with answer: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4                                                     
+:154.5.47.233 a:tidy.obscurity.org ?all )
+[_SPF_pre_parse_policy :: main.c->827]; Returning with valid SPFv1 record: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140                                                     
+ ip4:154.5.47.233 a:tidy.obscurity.org ?all )
+[SPF_parse_policy :: main.c->917]; about to parse (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.                                                     
+obscurity.org ?all ) of len: 111 (neutral)
+[SPF_parse_policy :: main.c->919]; there are 0 nodes in INCLUDE list
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy                                                     
+.obscurity.org ?all ) of len: 112
+[UTIL_strndup :: util.c->427]; Allocated 112 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154                                                     
+.5.47.233 a:tidy.obscurity.org ?all )
+[UTIL_index :: util.c->616]; called with string: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.o                                                     
+bscurity.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (6)
+[UTIL_strndup :: util.c->416]; called with string: (v=spf1 mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy                                                     
+.obscurity.org ?all ) of len: 7
+[UTIL_strndup :: util.c->421]; Allocated 7 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (v=spf1)
+[UTIL_is_spf_result :: util.c->880]; called with char (v)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (v=spf1)
+[UTIL_get_policy_mech :: util.c->1257]; leaving function; returning 1 (VERSION)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 1 (token: v=spf1) (pos: 6)
+[SPF_parse_policy :: main.c->1001]; policy mechanism is version (v=spf1)
+[UTIL_index :: util.c->616]; called with string: (v=spf1); char: =
+[UTIL_index :: util.c->623]; Found search char: (=); Returning: (1)
+[SPF_parse_policy :: main.c->1019]; SPF Version defined as: 1
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurit                                                     
+y.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (2)
+[UTIL_strndup :: util.c->416]; called with string: (mx ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscur                                                     
+ity.org ?all ) of len: 3
+[UTIL_strndup :: util.c->421]; Allocated 3 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (mx)
+[UTIL_is_spf_result :: util.c->880]; called with char (m)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (mx)
+[UTIL_get_policy_mech :: util.c->1281]; leaving function; returning 5 (MX)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 5 (token: mx) (pos: 2)
+[SPF_parse_policy :: main.c->1162]; policy mechanism is mx (mx)
+[DNS_query :: dns.c->240]; Called with (uhfco.net) and type: 15
+[DNS_query :: dns.c->314]; Received packet size of 167 bytes which contains 2 answers.
+[DNS_query :: dns.c->316]; ANSWERS: 2
+[DNS_query :: dns.c->317]; QUESTIONS: 1
+[DNS_mx_answer :: dns.c->677]; MX: mx1.uhfco.net Preference: 10
+[DNS_mx_answer :: dns.c->693]; REALLOCATE memory: 15 bytes
+[DNS_mx_answer :: dns.c->677]; MX: mx2.uhfco.net Preference: 20
+[DNS_mx_answer :: dns.c->693]; REALLOCATE memory: 29 bytes
+[UTIL_free :: util.c->573]; Free address 0x804d970 by DNS_query on line 453 (dns.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by DNS_query on line 454 (dns.c)
+[DNS_query :: dns.c->456]; returning rr_data: (mx1.uhfco.net mx2.uhfco.net)
+[UTIL_mx_cmp :: util.c->974]; rr_data is: (mx1.uhfco.net mx2.uhfco.net)
+[UTIL_strndup :: util.c->416]; called with string: (10.0.0.2) of len: 16
+[UTIL_strndup :: util.c->427]; Allocated 9 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (10.0.0.2)
+[UTIL_mx_cmp :: util.c->981]; TOKEN: (mx1.uhfco.net)
+[UTIL_validate_hostname :: util.c->2209]; called with: (134525968) and (mx1.uhfco.net)
+[_DNS_GNU_gethostbyname_r :: dns.c->1186]; entering function
+[UTIL_free :: util.c->573]; Free address 0x804bc68 by _pprintf_dbg on line 152 (util.c)
+[_DNS_GNU_gethostbyname_r :: dns.c->1196]; called with hostname (mx1.uhfco.net)
+[_DNS_GNU_gethostbyname_r :: dns.c->1202]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804c620 by _pprintf_dbg on line 152 (util.c)
+[UTIL_strndup :: util.c->416]; called with string: (24.207.0.211) of len: 17
+[UTIL_strndup :: util.c->427]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (24.207.0.211)
+[UTIL_validate_hostname :: util.c->2226]; CLI: 24.207.0.211 (3540045592) SRV: 10.0.0.2 (33554442)
+[UTIL_free :: util.c->573]; Free address 0x804c630 by UTIL_validate_hostname on line 2282 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804c620 by UTIL_validate_hostname on line 2283 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by UTIL_validate_hostname on line 2355 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d618 by UTIL_validate_hostname on line 2357 (util.c)
+[UTIL_validate_hostname :: util.c->2359]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_mx_cmp :: util.c->981]; TOKEN: (mx2.uhfco.net)
+[UTIL_validate_hostname :: util.c->2209]; called with: (134525968) and (mx2.uhfco.net)
+[_DNS_GNU_gethostbyname_r :: dns.c->1186]; entering function
+[UTIL_free :: util.c->573]; Free address 0x804c620 by _pprintf_dbg on line 152 (util.c)
+[_DNS_GNU_gethostbyname_r :: dns.c->1196]; called with hostname (mx2.uhfco.net)
+[_DNS_GNU_gethostbyname_r :: dns.c->1202]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804c638 by _pprintf_dbg on line 152 (util.c)
+[UTIL_strndup :: util.c->416]; called with string: (24.207.0.211) of len: 17
+[UTIL_strndup :: util.c->427]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (24.207.0.211)
+[UTIL_validate_hostname :: util.c->2226]; CLI: 24.207.0.211 (3540045592) SRV: 10.0.0.2 (33554442)
+[UTIL_free :: util.c->573]; Free address 0x804c648 by UTIL_validate_hostname on line 2282 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804c638 by UTIL_validate_hostname on line 2283 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by UTIL_validate_hostname on line 2355 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d618 by UTIL_validate_hostname on line 2357 (util.c)
+[UTIL_validate_hostname :: util.c->2359]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d608 by UTIL_mx_cmp on line 997 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4b8 by UTIL_mx_cmp on line 998 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.o                                                     
+rg ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (3)
+[UTIL_strndup :: util.c->416]; called with string: (ptr ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity                                                     
+.org ?all ) of len: 4
+[UTIL_strndup :: util.c->421]; Allocated 4 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (ptr)
+[UTIL_is_spf_result :: util.c->880]; called with char (p)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (ptr)
+[UTIL_get_policy_mech :: util.c->1294]; leaving function; returning 6 (PTR)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 6 (token: ptr) (pos: 3)
+[SPF_parse_policy :: main.c->1207]; policy mechanism is ptr (ptr)
+[UTIL_ptr_cmp :: util.c->1191]; called with (ptr)
+[UTIL_rev_addr :: util.c->1938]; called with: (10.0.0.2) len: (8)
+[UTIL_strndup :: util.c->416]; called with string: (10.0.0.2) of len: 9
+[UTIL_strndup :: util.c->427]; Allocated 9 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (10.0.0.2)
+[UTIL_rev_addr :: util.c->1945]; token : (10)
+[UTIL_rev_addr :: util.c->1945]; token : (0)
+[UTIL_rev_addr :: util.c->1945]; token : (0)
+[UTIL_rev_addr :: util.c->1945]; token : (2)
+[UTIL_free :: util.c->573]; Free address 0x804d618 by UTIL_rev_addr on line 1952 (util.c)
+[UTIL_rev_addr :: util.c->1960]; leaving function; returning reversed ip: 2.0.0.10.in-addr.arpa
+[UTIL_ptr_cmp :: util.c->1196]; address: 2.0.0.10.in-addr.arpa
+[UTIL_strndup :: util.c->416]; called with string: (uhfco.net) of len: 256
+[UTIL_strndup :: util.c->427]; Allocated 10 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (uhfco.net)
+[DNS_query :: dns.c->240]; Called with (2.0.0.10.in-addr.arpa) and type: 12
+[UTIL_assoc_prefix :: util.c->1482]; Stored SPF_NONE (1) (1)
+[DNS_query :: dns.c->253]; policy result: (none) from rule (ptr)
+[UTIL_free :: util.c->573]; Free address 0x804d970 by DNS_query on line 255 (dns.c)
+[UTIL_ptr_cmp :: util.c->1210]; Failed to pass SPF PTR mechanism check:
+[UTIL_ptr_cmp :: util.c->1212]; the domain pointed to by 2.0.0.10.in-addr.arpa is not a valid subdomain of uhfco.net
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by UTIL_ptr_cmp on line 1214 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4c8 by UTIL_ptr_cmp on line 1215 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org ?                                                     
+all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (15)
+[UTIL_strndup :: util.c->416]; called with string: (ip4:24.207.1.85 ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org                                                     
+ ?all ) of len: 16
+[UTIL_strndup :: util.c->421]; Allocated 16 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (ip4:24.207.1.85)
+[UTIL_is_spf_result :: util.c->880]; called with char (i)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (ip4:24.207.1.85)
+[UTIL_get_policy_mech :: util.c->1263]; leaving function; returning 7 (IP4)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 7 (token: ip4:24.207.1.85) (pos: 15)
+[SPF_parse_policy :: main.c->1227]; policy mechanism is ip4 (ip4:24.207.1.85)
+[UTIL_expand_ip :: util.c->1791]; called with string: (ip4:24.207.1.85)
+[UTIL_index :: util.c->616]; called with string: (ip4:24.207.1.85); char: :
+[UTIL_index :: util.c->623]; Found search char: (:); Returning: (3)
+[UTIL_index :: util.c->616]; called with string: (24.207.1.85); char: /
+[UTIL_index :: util.c->631]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_expand_ip :: util.c->1810]; Unable to get position on token (24.207.1.85), assuming /32 cidr block
+[UTIL_strndup :: util.c->416]; called with string: (24.207.1.85) of len: 12
+[UTIL_strndup :: util.c->427]; Allocated 12 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (24.207.1.85)
+[UTIL_free :: util.c->573]; Free address 0x804d4c0 by UTIL_expand_ip on line 1836 (util.c)
+[UTIL_expand_ip :: util.c->1848]; CIDR: (32) IP: (24.207.1.85)
+[SPF_parse_policy :: main.c->1237]; POL: 1426181912 (ip4:24.207.1.85) PEER: 33554442 (10.0.0.2)
+[UTIL_cidr_cmp :: util.c->2062]; POL: 1426181912 PEER: 33554442 CIDR: 32
+[UTIL_cidr_cmp :: util.c->2085]; 33554442 and 1426181912 using 32 cidr do not match
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1240 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (19)
+[UTIL_strndup :: util.c->416]; called with string: (ip4:24.207.0.192/26 ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org ?all ) of len:                                                      
+20
+[UTIL_strndup :: util.c->421]; Allocated 20 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (ip4:24.207.0.192/26)
+[UTIL_is_spf_result :: util.c->880]; called with char (i)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (ip4:24.207.0.192/26)
+[UTIL_get_policy_mech :: util.c->1263]; leaving function; returning 7 (IP4)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 7 (token: ip4:24.207.0.192/26) (pos: 19)
+[SPF_parse_policy :: main.c->1227]; policy mechanism is ip4 (ip4:24.207.0.192/26)
+[UTIL_expand_ip :: util.c->1791]; called with string: (ip4:24.207.0.192/26)
+[UTIL_index :: util.c->616]; called with string: (ip4:24.207.0.192/26); char: :
+[UTIL_index :: util.c->623]; Found search char: (:); Returning: (3)
+[UTIL_index :: util.c->616]; called with string: (24.207.0.192/26); char: /
+[UTIL_index :: util.c->623]; Found search char: (/); Returning: (12)
+[UTIL_strndup :: util.c->416]; called with string: (24.207.0.192/26) of len: 13
+[UTIL_strndup :: util.c->421]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (24.207.0.192)
+[UTIL_free :: util.c->573]; Free address 0x804d4c0 by UTIL_expand_ip on line 1836 (util.c)
+[UTIL_expand_ip :: util.c->1848]; CIDR: (26) IP: (24.207.0.192)
+[SPF_parse_policy :: main.c->1237]; POL: 3221278488 (ip4:24.207.0.192/26) PEER: 33554442 (10.0.0.2)
+[UTIL_cidr_cmp :: util.c->2062]; POL: 3221278488 PEER: 33554442 CIDR: 26
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1240 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (17)
+[UTIL_strndup :: util.c->416]; called with string: (ip4:70.68.214.140 ip4:154.5.47.233 a:tidy.obscurity.org ?all ) of len: 18
+[UTIL_strndup :: util.c->421]; Allocated 18 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (ip4:70.68.214.140)
+[UTIL_is_spf_result :: util.c->880]; called with char (i)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (ip4:70.68.214.140)
+[UTIL_get_policy_mech :: util.c->1263]; leaving function; returning 7 (IP4)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 7 (token: ip4:70.68.214.140) (pos: 17)
+[SPF_parse_policy :: main.c->1227]; policy mechanism is ip4 (ip4:70.68.214.140)
+[UTIL_expand_ip :: util.c->1791]; called with string: (ip4:70.68.214.140)
+[UTIL_index :: util.c->616]; called with string: (ip4:70.68.214.140); char: :
+[UTIL_index :: util.c->623]; Found search char: (:); Returning: (3)
+[UTIL_index :: util.c->616]; called with string: (70.68.214.140); char: /
+[UTIL_index :: util.c->631]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_expand_ip :: util.c->1810]; Unable to get position on token (70.68.214.140), assuming /32 cidr block
+[UTIL_strndup :: util.c->416]; called with string: (70.68.214.140) of len: 14
+[UTIL_strndup :: util.c->427]; Allocated 14 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (70.68.214.140)
+[UTIL_free :: util.c->573]; Free address 0x804d4c0 by UTIL_expand_ip on line 1836 (util.c)
+[UTIL_expand_ip :: util.c->1848]; CIDR: (32) IP: (70.68.214.140)
+[SPF_parse_policy :: main.c->1237]; POL: 2362852422 (ip4:70.68.214.140) PEER: 33554442 (10.0.0.2)
+[UTIL_cidr_cmp :: util.c->2062]; POL: 2362852422 PEER: 33554442 CIDR: 32
+[UTIL_cidr_cmp :: util.c->2085]; 33554442 and 2362852422 using 32 cidr do not match
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1240 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (ip4:154.5.47.233 a:tidy.obscurity.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (16)
+[UTIL_strndup :: util.c->416]; called with string: (ip4:154.5.47.233 a:tidy.obscurity.org ?all ) of len: 17
+[UTIL_strndup :: util.c->421]; Allocated 17 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (ip4:154.5.47.233)
+[UTIL_is_spf_result :: util.c->880]; called with char (i)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (ip4:154.5.47.233)
+[UTIL_get_policy_mech :: util.c->1263]; leaving function; returning 7 (IP4)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 7 (token: ip4:154.5.47.233) (pos: 16)
+[SPF_parse_policy :: main.c->1227]; policy mechanism is ip4 (ip4:154.5.47.233)
+[UTIL_expand_ip :: util.c->1791]; called with string: (ip4:154.5.47.233)
+[UTIL_index :: util.c->616]; called with string: (ip4:154.5.47.233); char: :
+[UTIL_index :: util.c->623]; Found search char: (:); Returning: (3)
+[UTIL_index :: util.c->616]; called with string: (154.5.47.233); char: /
+[UTIL_index :: util.c->631]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_expand_ip :: util.c->1810]; Unable to get position on token (154.5.47.233), assuming /32 cidr block
+[UTIL_strndup :: util.c->416]; called with string: (154.5.47.233) of len: 13
+[UTIL_strndup :: util.c->427]; Allocated 13 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (154.5.47.233)
+[UTIL_free :: util.c->573]; Free address 0x804d4c0 by UTIL_expand_ip on line 1836 (util.c)
+[UTIL_expand_ip :: util.c->1848]; CIDR: (32) IP: (154.5.47.233)
+[SPF_parse_policy :: main.c->1237]; POL: 3912172954 (ip4:154.5.47.233) PEER: 33554442 (10.0.0.2)
+[UTIL_cidr_cmp :: util.c->2062]; POL: 3912172954 PEER: 33554442 CIDR: 32
+[UTIL_cidr_cmp :: util.c->2085]; 33554442 and 3912172954 using 32 cidr do not match
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1240 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (a:tidy.obscurity.org ?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (20)
+[UTIL_strndup :: util.c->416]; called with string: (a:tidy.obscurity.org ?all ) of len: 21
+[UTIL_strndup :: util.c->421]; Allocated 21 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (a:tidy.obscurity.org)
+[UTIL_is_spf_result :: util.c->880]; called with char (a)
+[UTIL_is_spf_result :: util.c->889]; leaving function; returning SPF_FALSE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_policy_mech :: util.c->1253]; called with: (a:tidy.obscurity.org)
+[UTIL_get_policy_mech :: util.c->1288]; leaving function; returning 4 (A)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 4 (token: a:tidy.obscurity.org) (pos: 20)
+[SPF_parse_policy :: main.c->1130]; policy mechanism is A (a:tidy.obscurity.org)
+[UTIL_a_cmp :: util.c->1050]; called with (a:tidy.obscurity.org) and cidr: 32
+[UTIL_strndup :: util.c->416]; called with string: (a:tidy.obscurity.org) of len: 21
+[UTIL_strndup :: util.c->427]; Allocated 21 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (a:tidy.obscurity.org)
+[UTIL_index :: util.c->616]; called with string: (a:tidy.obscurity.org); char: :
+[UTIL_index :: util.c->623]; Found search char: (:); Returning: (1)
+[_DNS_GNU_gethostbyname_r :: dns.c->1186]; entering function
+[UTIL_free :: util.c->573]; Free address 0x804c658 by _pprintf_dbg on line 152 (util.c)
+[_DNS_GNU_gethostbyname_r :: dns.c->1196]; called with hostname (tidy.obscurity.org)
+[_DNS_GNU_gethostbyname_r :: dns.c->1202]; leaving function
+[UTIL_free :: util.c->573]; Free address 0x804c670 by _pprintf_dbg on line 152 (util.c)
+[UTIL_a_cmp :: util.c->1094]; IN ADDR; Checking: 2561197890
+[UTIL_cidr_cmp :: util.c->2062]; POL: 2561197890 PEER: 33554442 CIDR: 32
+[UTIL_cidr_cmp :: util.c->2085]; 33554442 and 2561197890 using 32 cidr do not match
+[UTIL_free :: util.c->573]; Free address 0x804c638 by UTIL_a_cmp on line 1144 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804b460 by UTIL_a_cmp on line 1145 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4c8 by UTIL_a_cmp on line 1147 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4a8 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_index :: util.c->616]; called with string: (?all ); char:  
+[UTIL_index :: util.c->623]; Found search char: ( ); Returning: (4)
+[UTIL_strndup :: util.c->416]; called with string: (?all ) of len: 5
+[UTIL_strndup :: util.c->421]; Allocated 5 bytes of memory.
+[UTIL_strndup :: util.c->431]; leaving function; returning string: (?all)
+[UTIL_is_spf_result :: util.c->880]; called with char (?)
+[UTIL_is_spf_result :: util.c->884]; leaving function; returning SPF_TRUE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_get_mech_prefix :: util.c->1631]; called with char: (?all)
+[UTIL_get_mech_prefix :: util.c->1661]; leaving function; returning SPF_NEUTRAL (?all) 5
+[UTIL_get_policy_mech :: util.c->1253]; called with: (all)
+[UTIL_get_policy_mech :: util.c->1275]; leaving function; returning 2 (ALL)
+[SPF_parse_policy :: main.c->969]; SPF Policy Mechanism: 2 (token: all) (pos: 4)
+[SPF_parse_policy :: main.c->1041]; policy mechanism is all (all) policy: (2)
+[UTIL_assoc_prefix :: util.c->1527]; Stored SPF_NEUTRAL (5) (5)
+[UTIL_free :: util.c->573]; Free address 0x804d608 by SPF_parse_policy on line 1380 (main.c)
+[UTIL_assoc_prefix :: util.c->1374]; Entering function (5) (?all)
+[UTIL_assoc_prefix :: util.c->1527]; Stored SPF_NEUTRAL (5) (5)
+[SPF_parse_policy :: main.c->1389]; returning SPF_TRUE
+[UTIL_free :: util.c->573]; Free address 0x804b460 by _pprintf_dbg on line 152 (util.c)
+[UTIL_free :: util.c->573]; Free address 0x804d4f0 by SPF_parse_policy on line 1390 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804d8f8 by _SPF_policy_main_rec on line 707 (main.c)
+[_SPF_policy_main_rec :: main.c->778]; Return policy 5 on mech: (?all) with outcome: (neutral)
+[SPF_policy_main :: main.c->456]; [2] result of SPF parse is 5
+[SPF_policy_main :: main.c->467]; include buffer: ((null))
+[SPF_policy_main :: main.c->480]; [2] tmp is holding the current domain: (uhfco.net)
+[SPF_policy_main :: main.c->609]; [2] current domain is now: (uhfco.net); received back from tmp
+[SPF_policy_main :: main.c->620]; [2] leaving function; returning with value: (5)
+[SPF_policy_main :: main.c->601]; result of SPF parse was 5
+[SPF_policy_main :: main.c->609]; [2] current domain is now: (6o4.ca); received back from tmp
+[UTIL_free :: util.c->573]; Free address 0x804d4e0 by _SPF_clear_holdbufs on line 1813 (main.c)
+[SPF_policy_main :: main.c->620]; [2] leaving function; returning with value: (5)
+SPF short result:   neutral
+SPF verbose result: policy result: (neutral) from rule (?all)
+[SPF_build_header :: main.c->1617]; Prepending header string: (Received-SPF: neutral (spftools.net: domain of jcouzens@6o4.ca is neutral about                                                      
+designating 10.0.0.2 as permitted sender))
+RFC2822 header:     Received-SPF: neutral (spftools.net: domain of jcouzens@6o4.ca is neutral about designating 10.0.0.2 as permitted sender)
+[UTIL_free :: util.c->573]; Free address 0x804b380 by SPF_close on line 332 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b420 by SPF_close on line 333 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b438 by SPF_close on line 334 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b450 by SPF_close on line 335 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b410 by SPF_close on line 336 (main.c)
+[UTIL_free :: util.c->567]; Unable to free() on NULL pointer at main.c:337 in SPF_close; address 0x0.
+[UTIL_free :: util.c->567]; Unable to free() on NULL pointer at main.c:338 in SPF_close; address 0x0.
+[UTIL_free :: util.c->573]; Free address 0x804b3d0 by SPF_close on line 339 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b3b0 by SPF_close on line 340 (main.c)
+[UTIL_free :: util.c->567]; Unable to free() on NULL pointer at main.c:341 in SPF_close; address 0x0.
+[UTIL_free :: util.c->573]; Free address 0x804b398 by SPF_close on line 342 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b400 by SPF_close on line 343 (main.c)
+[UTIL_free :: util.c->573]; Free address 0x804b090 by SPF_close on line 344 (main.c)
+
+
+    </pre>
+  </body
+</html>

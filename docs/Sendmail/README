@@ -1,0 +1,6 @@
+File: libspf-1.0.0/docs/Sendmail/README
+Date: 08/28/04
+Desc: README for libSPF 1.0 'Sendmail' documentation
+
+HOWTO's can be found in the 8.??.x directories which correspond to 
+specific Sendmail versions since libSPF started patching.

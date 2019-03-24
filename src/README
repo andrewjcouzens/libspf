@@ -1,0 +1,12 @@
+File: libspf-1.0.0/src/README
+Date: 08/09/04 
+Desc: README for libSPF 1.0 sources
+
+The 'sources' or literal src directory as you are likely in if you are
+reading this document is organized into the following structure:
+
+libspf    - the libSPF library itsself
+spfqtool  - the libSPF Qquery Tool
+spfmilter - a fork of Jef Poskanzers Sendmail milter (BETA)
+
+EOF

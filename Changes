@@ -1,0 +1,12 @@
+Revision history for libspf
+
+	- spfmilter was referenced by configure.in, but wasn't part
+          of the latest tarball - discontinued?
+	- applied patch by kd6lvw@yahoo.com to support SPF record
+          types in addition to TXT records.
+        - added default definition of T_SPF when it isn't define'd.
+        - fixed a lot of minor mistakes in configure.in.
+	- this version is currently (temporarily...) maintained
+          by Marc Lehmann <libspf@schmorp.de>.
+ 
+

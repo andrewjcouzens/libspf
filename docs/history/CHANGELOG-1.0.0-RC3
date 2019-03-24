@@ -1,0 +1,30 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for v1.0.0 Release Candidate 3 
+
+
+1.0-RC3 -
+
+ - Fixed macro parser bug introduced by changes in RC2.  Once again thanks to
+   Roger Moser <Roger.Moser@pamho.net> for his continued attention to this
+   particular area, and the library in general.
+ - Added Autotools/Autoconf/Automake/libtool (this should make many of you
+   happy)  This is added through works based on a patch received from Teddy.
+ - Small changes to the SPF query language parser making it stricter with the
+   mechanisms.
+ - peer_info no longer passed to UTIL_cidr_cmp (it hasn't been used in some
+   time)
+
+
+EOF

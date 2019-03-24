@@ -1,0 +1,1463 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE>Sendmail v8.13.1 + libSPF v1.0 HOWTO</TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.1  (Linux)">
+	<META NAME="CREATED" CONTENT="20040630;6532500">
+	<META NAME="CHANGED" CONTENT="20040805;7255000">
+	<META NAME="CLASSIFICATION" CONTENT="libSPF Sendmail Integration">
+	<META NAME="DESCRIPTION" CONTENT="This HOWTO isn't guaranteed to get you all setup, but it should be a good document to follow whilst trying to integrate libSPF into Sendmail v8.13.1.  This HOWTO is quite backwards compatible with other versions, feel free to report success!">
+	<META NAME="KEYWORDS" CONTENT="sendmail spf libspf">
+	<STYLE>
+	<!--
+		@page { size: 8.5in 11in; margin-left: 1.25in; margin-right: 1.25in; margin-top: 1in; margin-bottom: 1in }
+		P { margin-bottom: 0.08in; border: none; padding: 0in }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<P ALIGN=CENTER STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=2><U><B>Sendmail
+v8.13.1 + libSPF v1.0-RC5 HOWTO</B></U></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><B><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Arial, sans-serif">by
+James Couzens &lt;<A HREF="mailto:jcouzens@codeshare.ca">jcouzens@codeshare.ca</A>&gt;</FONT></FONT></B></P>
+<P STYLE="margin-bottom: 0in"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Arial, sans-serif"><B>Updated:
+August 5, 2004</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><A HREF="mailto:james@code3"><B>james@code3</B></A><B>
+$ wget http://libspf.org/files/src/libspf-1.0.0-RC5.tar.bz2</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><A HREF="mailto:james@code3"><B>james@code3</B></A><B>
+$ tar jxvf libspf-1.0.0-RC5.tar.bz2</B><BR><B>james@code3 $ cd
+libspf-1_0_0-RC5<BR>james@code3 $ ./configure &ndash;enable-debug<BR></B></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for a BSD-compatible install... /bin/install -c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether build environment is sane... yes</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for gawk... gawk</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether make sets $(MAKE)... yes</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for gcc... gcc</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for C compiler default output file name... a.out</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether the C compiler works... yes</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether we are cross compiling... no</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for suffix of executables... </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for suffix of object files... o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether we are using the GNU C compiler... yes</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+whether gcc accepts -g... yes</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for gcc option to accept ANSI C... none needed</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">checking
+for style of include used by make... GNU</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>!SNIP!
+no need to paste all of the 'configure' output!</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">configure:
+creating ./config.status</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/libspf/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/spfqtool/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/libspf/spf.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+config.h is unchanged</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+executing depfiles commands</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">configure:
+creating ./config.status</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/libspf/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/spfqtool/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/libspf/spf.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating src/spfmilter/Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+config.h is unchanged</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+executing depfiles commands</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">--------------------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+                              <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">libspf
+1.0.0-RC5                                 </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+           <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">An
+ANSI C Implementation of the Sender Policy Framework</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">--------------------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./CHANGELOG
+............ List of documented changed between versions</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./Docs
+................. Excellent API and integration Documentation</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./Examples
+............. Examples of how to implement</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./FAQ
+.................. Frequently Asked Questions (and Answers :-) )</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./LICENSE
+.............. Terms under which libSPF is licensed</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./README
+............... A Quick and Excellent rundown of basic information</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./TODO
+................. Things planned for future releases that are 'To Do'</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./VERSION
+.............. Version of thie release</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./bin
+.................. Static &amp; Dyn. versions of the libSPF Query
+Tool</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./libspf.kateproject
+... KDE's excellent IDE 'kate' Project File</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./patches
+.............. MTA Patches</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./src
+.................. Its not the Swartz, but it will have to do ;)</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">--------------------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">There
+are complete HOWTOs (or walkthru) documents within the 'Docs' dir for</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">the
+MTA's this library supports.</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Commercial
+developers looking to integrate libSPF, there is no cost!  If you</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">require
+assistance (free) please contact &lt;developers@codeshare.ca&gt;</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Website
+................................ http://libSPF.org</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Forums
+................................. http://forums.6o4.ca</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Contact
+................................ jcouzens@codeshare.ca</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">--------------------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Enable
+Debugging .................... OFF</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Disable
+build of SPF Query Tool ..... OFF</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Enable
+use of libresolv resolver..... ON</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Enable
+use of spfmilter ............. OFF</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Enable
+use of libbind resolver....... OFF</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">libSPF
+Query tool binaries are in the new 'bin' dir in the libSPF root</FONT></FONT></P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.21in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">libSPF
+libraries are in the new 'lib' dir in the libSPF
+root<BR>--------------------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR><B>root@antitrust
+~/code/dev/c/libspf-1.0.0-RC5 # make</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cd
+. &amp;&amp; /bin/sh ./config.status config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+config.h is unchanged</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make
+ all-recursive</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+all in src</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+all in libspf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">source='main.c'
+object='main.lo' libtool=yes \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depfile='.deps/main.Plo'
+tmpdepfile='.deps/main.TPlo' \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depmode=gcc3
+/bin/sh ../../build_tools/depcomp \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I../..
+-I../..    </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-Wall
+-O2 -g -O2 -c -o main.lo `test -f 'main.c' || echo './'`main.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c main.c
+-MT main.lo </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MD
+-MP -MF .deps/main.TPlo  -fPIC -DPIC -o .libs/main.o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c main.c
+-MT main.lo </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MD
+-MP -MF .deps/main.TPlo -o main.o &gt;/dev/null 2&gt;&amp;1</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">source='dns.c'
+object='dns.lo' libtool=yes \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depfile='.deps/dns.Plo'
+tmpdepfile='.deps/dns.TPlo' \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depmode=gcc3
+/bin/sh ../../build_tools/depcomp \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I../..
+-I../..    </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-Wall
+-O2 -g -O2 -c -o dns.lo `test -f 'dns.c' || echo './'`dns.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c dns.c -MT
+dns.lo </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MD
+-MP -MF .deps/dns.TPlo  -fPIC -DPIC -o .libs/dns.o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c dns.c -MT
+dns.lo </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MD
+-MP -MF .deps/dns.TPlo -o dns.o &gt;/dev/null 2&gt;&amp;1</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">source='macro.c'
+object='macro.lo' libtool=yes \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depfile='.deps/macro.Plo'
+tmpdepfile='.deps/macro.TPlo' \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depmode=gcc3
+/bin/sh ../../build_tools/depcomp \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I../..
+-I../..  </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-Wall
+-O2 -g -O2 -c -o macro.lo `test -f 'macro.c' || echo './'`macro.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c macro.c
+-MT </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">macro.lo
+-MD -MP -MF .deps/macro.TPlo  -fPIC -DPIC -o .libs/macro.o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c macro.c
+-MT </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">macro.lo
+-MD -MP -MF .deps/macro.TPlo -o macro.o &gt;/dev/null 2&gt;&amp;1</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">source='util.c'
+object='util.lo' libtool=yes \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depfile='.deps/util.Plo'
+tmpdepfile='.deps/util.TPlo' \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depmode=gcc3
+/bin/sh ../../build_tools/depcomp \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=compile gcc -DHAVE_CONFIG_H -I. -I. -I../.. </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-I../..
+   -Wall -O2 -g -O2 -c -o util.lo `test -f 'util.c' || echo
+'./'`util.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c util.c </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MT
+util.lo -MD -MP -MF .deps/util.TPlo  -fPIC -DPIC -o .libs/util.o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../.. -Wall -O2 -g -O2 -c util.c </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-MT
+util.lo -MD -MP -MF .deps/util.TPlo -o util.o &gt;/dev/null 2&gt;&amp;1</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=link gcc  -Wall -O2 -g -O2   -o libspf.la -</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">rpath
+/usr/local/lib -version-info &quot;0:5:0&quot; -release 1.0 main.lo
+dns.lo macro.lo </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">util.lo
+-lresolv -lresolv -lresolv -lnsl -lc </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-shared  .libs/main.o .libs/dns.o .libs/macro.o .libs/util.o 
+-lresolv </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-lnsl
+-lc  -Wl,-soname -Wl,libspf-1.0.so.0 -o .libs/libspf-1.0.so.0.0.5</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+.libs &amp;&amp; rm -f libspf-1.0.so.0 &amp;&amp; ln -s
+libspf-1.0.so.0.0.5 libspf-1.0.so.0)</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+.libs &amp;&amp; rm -f libspf.so &amp;&amp; ln -s libspf-1.0.so.0.0.5
+libspf.so)</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ar
+cru .libs/libspf.a  main.o dns.o macro.o util.o</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ranlib
+.libs/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">creating
+libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+.libs &amp;&amp; rm -f libspf.la &amp;&amp; ln -s ../libspf.la
+libspf.la)</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make
+DESTDIR= libdir=`pwd`/../../lib install-exec</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[4]:
+Entering directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs
+./libspf-1.0.0-RC5/src/libspf/../../lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c  </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">libspf.la
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">.libs/libspf-1.0.so.0.0.5
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf-1.0.so.0.0.5</FONT></FONT></P>
+<OL TYPE=i START=400>
+	<LI><P STYLE="margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+	<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./libspf-1.0.0-RC5/src/libspf/../../lib
+	&amp;&amp; rm -f libspf-1.0.so.0 &amp;&amp;</FONT></FONT></P>
+	<LI><P STYLE="margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+	<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ln
+	-s libspf-1.0.so.0.0.5 libspf-1.0.so.0)</FONT></FONT></P>
+</OL>
+<OL TYPE=i START=400>
+	<LI><P STYLE="margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+	<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">./libspf-1.0.0-RC5/src/libspf/../../lib
+	&amp;&amp; rm -f libspf.so &amp;&amp;</FONT></FONT></P>
+	<LI><P STYLE="margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+	<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ln
+	-s libspf-1.0.so.0.0.5 libspf.so)</FONT></FONT></P>
+</OL>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.lai ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.a ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ranlib
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">chmod
+644 ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">libtool:
+install: warning: remember to run `libtool --finish /usr/local/lib'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[4]:
+Leaving directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+all in spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">source='spfqtool.c'
+object='spfqtool.o' libtool=no \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depfile='.deps/spfqtool.Po'
+tmpdepfile='.deps/spfqtool.TPo' \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">depmode=gcc3
+/bin/sh ../../build_tools/depcomp \</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-DHAVE_CONFIG_H -I. -I. -I../.. -I../libspf/.libs -I../libspf   </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-Wall
+-ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -Wall -O2 -g -O2 -c `test -f
+'spfqtool.c' || echo './'`spfqtool.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=link gcc -Wall -ggdb3 -D_GNU_SOURCE </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-D_BSD_SOURCE
+-Wall -O2 -g -O2   -o spfqtool  spfqtool.o ../libspf/libspf.la
+-lresolv -lresolv -lnsl -lc </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -Wall -O2 -g -O2 </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-o
+.libs/spfqtool spfqtool.o  ../libspf/.libs/libspf.so -lresolv -lnsl
+-lc -Wl,--rpath -Wl,/usr/local/lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">creating
+spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=link gcc -Wall -ggdb3 -D_GNU_SOURCE </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-D_BSD_SOURCE
+-Wall -O2 -g -O2   -o spfqtool_static -static </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-lresolv
+spfqtool.o ../libspf/.libs/libspf.a -lresolv -lresolv -lnsl -lc </FONT></FONT>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">gcc
+-Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -Wall -O2 -g -O2</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">-o
+spfqtool_static spfqtool.o  ../libspf/.libs/libspf.a -lresolv -lnsl
+-lc</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make
+DESTDIR= bindir=`pwd`/../../bin install-exec</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[4]:
+Entering directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs
+./libspf-1.0.0-RC5/src/spfqtool/../../bin</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/spfqtool ./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool_static
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c spfqtool_static
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[4]:
+Leaving directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Nothing to be done for `all-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cd
+. &amp;&amp; /bin/sh ./config.status config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+config.h is unchanged</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Leaving directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+# make install</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+install in src</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+install in libspf</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make
+DESTDIR= libdir=`pwd`/../../lib install-exec</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs
+./libspf-1.0.0-RC5/src/libspf/../../lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c  libspf.la
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf-1.0.so.0.0.5
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf-1.0.so.0.0.5</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+./libspf-1.0.0-RC5/src/libspf/../../lib &amp;&amp; rm -f
+libspf-1.0.so.0 &amp;&amp; ln -s libspf-1.0.so.0.0.5 libspf-1.0.so.0)</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+./libspf-1.0.0-RC5/src/libspf/../../lib &amp;&amp; rm -f libspf.so &amp;&amp;
+ln -s libspf-1.0.so.0.0.5 libspf.so)</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.lai ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.a ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">ranlib
+./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">chmod
+644 ./libspf-1.0.0-RC5/src/libspf/../../lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">libtool:
+install: warning: remember to run `libtool --finish /usr/local/lib'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs /usr/local/lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c  libspf.la
+/usr/local/lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf-1.0.so.0.0.5 /usr/local/lib/libspf-1.0.so.0.0.5</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+/usr/local/lib &amp;&amp; rm -f libspf-1.0.so.0 &amp;&amp; ln -s
+libspf-1.0.so.0.0.5 libspf-1.0.so.0)</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">(cd
+/usr/local/lib &amp;&amp; rm -f libspf.so &amp;&amp; ln -s
+libspf-1.0.so.0.0.5 libspf.so)</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.lai /usr/local/lib/libspf.la</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/libspf.a /usr/local/lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">ranlib
+/usr/local/lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">chmod
+644 /usr/local/lib/libspf.a</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">PATH=&quot;$PATH:/sbin&quot;
+ldconfig -n /usr/local/lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">----------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Libraries
+have been installed in:</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+   <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/usr/local/lib</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">If
+you ever happen to want to link against installed libraries</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">in
+a given directory, LIBDIR, you must either use libtool, and</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">specify
+the full pathname of the library, or use the `-LLIBDIR'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">flag
+during linking and do at least one of the following:</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+   <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+add LIBDIR to the `LD_LIBRARY_PATH' environment variable</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+     <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">during
+execution</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+   <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+add LIBDIR to the `LD_RUN_PATH' environment variable</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+     <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">during
+linking</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+   <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+use the `-Wl,--rpath -Wl,LIBDIR' linker flag</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+   <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">-
+have your system administrator add LIBDIR to `/etc/ld.so.conf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">See
+any operating system documentation about shared libraries for</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">more
+information, such as the ld(1) and ld.so(8) manual pages.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">----------------------------------------------------------------------</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs /usr/local/include</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+ <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c -m 644 spf.h /usr/local/include/spf.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5/src/libspf'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+install in spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make
+DESTDIR= bindir=`pwd`/../../bin install-exec</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs
+./libspf-1.0.0-RC5/src/spfqtool/../../bin</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/spfqtool ./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool_static
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c spfqtool_static
+./libspf-1.0.0-RC5/src/spfqtool/../../bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../build_tools/mkinstalldirs /usr/local/bin</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool
+/usr/local/bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c .libs/spfqtool /usr/local/bin/spfqtool</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+  <FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/sh
+../../libtool --mode=install /bin/install -c spfqtool_static
+/usr/local/bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">/bin/install
+-c spfqtool_static /usr/local/bin/spfqtool_static</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Nothing to be done for `install-data-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5/src/spfqtool'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Entering directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Nothing to be done for `install-exec-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Nothing to be done for `install-data-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[3]:
+Leaving directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Leaving directory `./libspf-1.0.0-RC5/src'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">cd
+. &amp;&amp; /bin/sh ./config.status config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+creating config.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">config.status:
+config.h is unchanged</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Entering directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Nothing to be done for `install-exec-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Nothing to be done for `install-data-am'.</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">make[2]:
+Leaving directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.19in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Arial, sans-serif">make[1]:
+Leaving directory `./libspf-1.0.0-RC5'</FONT></FONT></P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+# ldconfig<BR>james@code3 # ldconfig -p | grep spf</B></FONT></FONT></P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Courier, monospace">libspf.so.1
+(libc6) =&gt; /usr/local/lib/libspf.so.1</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in; border: none; padding: 0in">
+<BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+$ cd ../sendmail-8.13.1<BR>james@code3 $ patch -p0 &lt;
+../libspf-1_0_0-RC5/patches/sendmail/sendmail-8.13.1-libspf-1.0-RC5.diff</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Courier, monospace">patching
+file sendmail/readcf.c<BR>patching file sendmail/Makefile.m4<BR>patching
+file sendmail/sendmail.h<BR>patching file cf/feature/spf.m4<BR>patching
+file cf/m4/proto.m4<BR>patching file sendmail/srvrsmtp.c</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in; border: none; padding: 0in">
+<BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+$ cd cf/cf<BR>james@code3 $ cp generic-linux.mc
+sendmail.mc<BR>james@code3 $ vi sendmail.mc</B><BR><BR>I appended the
+following line:<BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B><FONT FACE="Courier, monospace">FEATURE(spf)dnl</FONT></B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>If
+you want to reject all email that receives SPF_FAIL you would do:<BR></B></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B><FONT FACE="Courier, monospace">FEATURE(spf,
+2)dnl<BR>FEATURE(`delay_checks')dnl</FONT></B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B><BR></B></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>If
+you are not rejecting, you do not need the 'delay_checks' line.<BR><BR>DO
+NOT DO THE FOLLOWING (even tho the HOWTO included says you can, its
+wrong, because its broken):</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B><FONT FACE="Courier, monospace">FEATURE(spf,
+`SPFAction', `SPFHeaderState', `SPFBestGuessState',
+`SPFTrustedForwarderState', `SPFExplainState', `SPFBestGuess',
+`SPFTrustedForwarder', `SPFExplain')dnl</FONT></B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>Although
+the idea is GREAT it doesn't work, so don't do it until Teddy has a
+chance<BR>(or someone else who can understand m4) to fix it, just
+apply the single feature.</B><BR><BR>For the record I tried a few
+variations for example by putting each FEATURE on <BR>its own line
+with actual arguments and I almost had it working properly,<BR>but
+not quite, so this is why I say don't do it. Try if you are feel
+dangerous, and submit any positive results.<BR><BR><B>james@code3 $
+cat sendmail.mc</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Courier, monospace">divert(-1)</FONT></FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+Copyright (c) 1998, 1999 Sendmail, Inc. and its suppliers.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+      All rights reserved.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+Copyright (c) 1983 Eric P. Allman.  All rights reserved.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+Copyright (c) 1988, 1993</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+      The Regents of the University of California.  All rights
+reserved.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+By using this file, you agree to the terms and conditions set</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+forth in the LICENSE file which can be found at the top level of</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+the sendmail distribution.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+ This is a generic configuration file for Linux.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+ It has support for local and SMTP mail only.  If you want to</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+ customize it, copy it to a name appropriate for your environment</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+ and do the modifications there.</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">divert(0)dnl</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">VERSIONID(`$Id:
+generic-linux.mc,v 8.1 1999/09/24 22:48:05 gshapiro Exp $')</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">OSTYPE(linux)dnl</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">DOMAIN(generic)dnl</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">FEATURE(`spf',
+2)dnl</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">FEATURE(`delay_checks')dnl</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt"><B>MAILER(local)</B></FONT></FONT></P>
+<P STYLE="margin-left: 0.79in; margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+$ sh Build sendmail.cf</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Using
+M4=/usr/bin/m4</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">rm
+-f sendmail.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/usr/bin/m4
+../m4/cf.m4 sendmail.mc &gt; sendmail.cf || ( rm -f sendmail.cf &amp;&amp;
+exit 1 )</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">echo
+&quot;### sendmail.mc ###&quot; &gt;&gt;sendmail.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">sed
+-e 's/^/# /' sendmail.mc &gt;&gt;sendmail.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">chmod
+444 sendmail.cf</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+# sh Build install-cf</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Using
+M4=/usr/bin/m4</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">../../devtools/bin/install.sh
+-c -o root -g bin -m 0444 sendmail.cf /etc/mail/sendmail.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">rm
+-f submit.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/usr/bin/m4
+../m4/cf.m4 submit.mc &gt; submit.cf || ( rm -f submit.cf &amp;&amp;
+exit 1 )</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">echo
+&quot;### submit.mc ###&quot; &gt;&gt;submit.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">sed
+-e 's/^/# /' submit.mc &gt;&gt;submit.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">chmod
+444 submit.cf</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">../../devtools/bin/install.sh
+-c -o root -g bin -m 0444 submit.cf /etc/mail/submit.cf</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><A HREF="mailto:james@code3"><B>james@code3</B></A><B>
+# sh Build install</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+all in:</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">/home/james/code/dev/c/sendmail-8.13.1.spf/libsm</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Configuration:
+pfx=, os=Linux, rel=2.6.7, rbase=2, rroot=2.6, arch=i686, sfx=,
+variant=optimized</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Using
+M4=/usr/bin/m4</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Creating
+/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm
+using /home/james/code/dev/c/sendmail-8.13.1.spf/devtools/OS/Linux</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+dependencies in
+/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory
+`/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">rm
+-f sm_os.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ln
+-f -s ../../include/sm/os/sm_os_linux.h sm_os.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-M -I. -I../../include  -DNEWDB    assert.c debug.c errstring.c exc.c
+heap.c match.c rpool.c strdup.c strerror.c strl.c clrerr.c fclose.c
+feof.c ferror.c fflush.c fget.c fpos.c findfp.c flags.c fopen.c
+fprintf.c fpurge.c fput.c fread.c fscanf.c fseek.c fvwrite.c fwalk.c
+fwrite.c get.c makebuf.c put.c refill.c rewind.c setvbuf.c smstdio.c
+snprintf.c sscanf.c stdio.c strio.c ungetc.c vasprintf.c vfprintf.c
+vfscanf.c vprintf.c vsnprintf.c vsscanf.c wbuf.c wsetup.c string.c
+stringf.c xtrap.c strto.c test.c path.c strcasecmp.c strrevcmp.c
+signal.c clock.c config.c shm.c mbdb.c strexit.c cf.c ldap.c niprop.c
+mpeix.c   t-event.c t-exc.c t-rpool.c t-string.c t-smstdio.c
+t-match.c t-strio.c t-heap.c t-fopen.c t-strl.c t-strrevcmp.c
+t-types.c t-path.c t-float.c t-scanf.c t-shm.c t-cf.c b-strcmp.c  &gt;&gt;
+Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Leaving directory
+`/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+in
+/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory
+`/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/libsm'</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>SNIP!
+We don't need to see all of this, skipping to relevant SPF..</B></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">ln
+-f -s ../../include/sm/os/sm_os_linux.h sm_os.h</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-M -I. -I../../include  -DNEWDB  -DLIBSPF   main.c alias.c arpadate.c
+bf.c collect.c conf.c control.c convtime.c daemon.c deliver.c
+domain.c envelope.c err.c headers.c macro.c map.c mci.c milter.c
+mime.c parseaddr.c queue.c ratectrl.c readcf.c recipient.c sasl.c
+savemail.c sfsasl.c shmticklib.c sm_resolve.c srvrsmtp.c stab.c
+stats.c sysexits.c timers.c tls.c trace.c udb.c usersmtp.c util.c
+version.c    &gt;&gt; Makefile</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Leaving directory
+`/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/sendmail'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Making
+in
+/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/sendmail</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">make[1]:
+Entering directory
+`/home/james/code/dev/c/sendmail-8.13.1.spf/obj.Linux.2.6.7.i686/sendmail'</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">if
+[ ! -d /etc/mail ]; then mkdir -p /etc/mail; else :; fi</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">install
+-c -o bin -g bin -m 444 helpfile /etc/mail/helpfile</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cp
+/dev/null statistics</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">if
+[ ! -d /etc/mail ]; then mkdir -p /etc/mail; else :; fi</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">install
+-c -o root -g bin -m 0600 statistics /etc/mail/statistics</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o main.o main.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o alias.o alias.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o arpadate.o
+arpadate.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o bf.o bf.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o collect.o
+collect.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o conf.o conf.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o control.o
+control.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o convtime.o
+convtime.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o daemon.o
+daemon.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o deliver.o
+deliver.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o domain.o
+domain.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o envelope.o
+envelope.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o err.o err.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o headers.o
+headers.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o macro.o macro.c</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Courier, monospace">cc
+-O2 -I. -I../../include  -DNEWDB  -DLIBSPF      -c -o map.o map.c</FONT></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B><BR></B></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>!SNIP!</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">This
+next portion, the line numbers are only relevant if you have patched
+a fresh</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Sendmail
+8.13.1 install with only the libSPF patch, otherwise your line
+numbers</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">may
+very well be substantially different.</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR><B>james@code3
+$ vi /etc/mail/sendmail.cf</B><BR><BR>Looking at line 519 I can see
+the newly added SPF directives:</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><FONT FACE="Courier, monospace">#
+SPFAction<BR>O SPFAction=1<BR><BR># SPFHeaderState<BR>O
+SPFHeaderState=True<BR><BR># SPFBestGuessState<BR>O
+SPFBestGuessState=0<BR><BR># SPFTrustedForwarderState<BR>O
+SPFTrustedForwarderState=0<BR><BR># SPFExplainState<BR>O
+SPFExplainState=True<BR><BR># SPFBestGuess<BR>O SPFBestGuess=v=spf1
+a/24 mx/24 ptr<BR><BR># SPFTrustedForwarder<BR>O
+SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org<BR><BR>#
+SPFExplain<BR>O SPFExplain=See
+</FONT><A HREF="http://spf.pobox.com/why.html?sender=%25"><FONT FACE="Courier, monospace">http://spf.pobox.com/why.html?sender=%</FONT></A><A HREF="http://spf.pobox.com/why.html?sender=%25{S}&amp;ip=%25{I}&amp;receiver=%25{xR}" TARGET="_blank"><FONT FACE="Courier, monospace">{S}&amp;...&amp;receiver=%{xR}</FONT></A></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>This
+is what you see if you DON'T listen to my advice as listed up above:</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+SPFAction<BR>O SPFAction=SPFAction<BR><BR># SPFHeaderState<BR>O
+SPFHeaderState=SPFHeaderState<BR><BR># SPFBestGuessState<BR>O
+SPFBestGuessState=SPFBestGuessState<BR><BR>#
+SPFTrustedForwarderState<BR>O
+SPFTrustedForwarderState=SPFTrustedForwarderState<BR><BR>#
+SPFExplainState<BR>O SPFExplainState=SPFExplainState<BR><BR>#
+SPFBestGuess<BR>O SPFBestGuess=SPFBestGuess<BR><BR>#
+SPFTrustedForwarder<BR>O SPFTrustedForwarder=SPFTrustedForwarder<BR><BR>#
+SPFExplain<BR>O SPFExplain=SPFExplain</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>Down
+at line 593 you see the new header:</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">H?P?Return-Path:
+&lt;$g&gt;<BR>HReceived-SPF: ${spfheader}<BR>HReceived: $?sfrom $s
+$.$?_($?s$|from $.$_)<BR>$.$?{auth_type}(authenticated$?{auth_ssf}
+bits=${auth_ssf}$.)<BR>$.by $j ($v/$Z)$?r with $r$. id
+$i$?{tls_version}<BR>(version=${tls_version} cipher=${cipher}
+bits=${cipher_bits} verify=${verify})$.$?u<BR>for $u;
+$|;<BR>$.$b<BR>H?D?Resent-Date: $a<BR>H?D?Date: $a<BR>H?F?Resent-From:
+$?x$x &lt;$g&gt;$|$g$.<BR>H?F?From: $?x$x &lt;$g&gt;$|$g$.<BR>H?x?Full-Name:
+$x<BR># HPosted-Date: $a<BR># H?l?Received-Date:
+$b<BR>H?M?Resent-Message-Id: &lt;$t.$i@$j&gt;<BR>H?M?Message-Id:
+&lt;$t.$i@$j&gt;</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>Moving
+on down to line 1025:</B><BR></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">#
+Checks the SPF records of sending domain<BR>R$* $: $1 $|
+&lt;?&gt;$&amp;{spfreject}&lt;?&gt;<BR>R$* $| &lt;?&gt;1&lt;?&gt;
+$#error $@ 5.7.1 $: &quot;550 Mail from [&quot; $&amp;{client_addr}
+&quot;] Rejected. &quot; $&amp;{spfexplain}<BR>R$* $| &lt;?&gt;$* $:
+$1<BR><BR># Checks the SPF records of sending domain<BR>R$* $: $1 $|
+&lt;?&gt;$&amp;{spfreject}&lt;?&gt;<BR>R$* $| &lt;?&gt;1&lt;?&gt;
+$#error $@ 5.7.1 $: &quot;550 Mail from [&quot; $&amp;{client_addr}
+&quot;] Rejected. &quot; $&amp;{spfexplain}<BR>R$* $| &lt;?&gt;$* $:
+$1</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><B>james@code3
+# /etc/init.d/sendmail start<BR>james@code3 $ telnet localhost 25<BR></B></FONT></FONT><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Trying
+127.0.0.1...<BR>Connected to localhost.<BR>Escape character is
+'^]'.<BR>220 code3.codeshare.ca ESMTP Sendmail 8.13.0/8.13.0-SPF;
+Wed, 30 Jun 2004 05:35:15 -0700<BR>MAIL FROM: james@widgets.org<BR>250
+2.1.0 james@widgets.org... Sender ok<BR>RCPT TO:
+jcouzens@codeshare.ca<BR>250 2.1.5 jcouzens@codeshare.ca... Recipient
+ok<BR>DATA<BR>354 Enter mail, end with &quot;.&quot; on a line by
+itself<BR>From: James Couzens <BR>To: James Couzens<BR>Subject:
+Sendmail Test<BR>Date: June 30, 2004<BR><BR>testing<BR><BR>.<BR>250
+2.0.0 i5UCZFSV017746 Message accepted for delivery<BR>quit<BR>221
+2.0.0 code3.codeshare.ca closing connection<BR>Connection closed by
+foreign host.</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">I
+then check my mail...</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in"><BR>
+</P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<FONT FACE="Courier, monospace"><FONT SIZE=1 STYLE="font-size: 8pt">Return-Path:
+&lt;james@widgets.org&gt;<BR>Delivered-To:
+codeshare.ca-jcouzens@codeshare.ca<BR>Received: (qmail 27438 invoked
+by uid 1006); 30 Jun 2004 12:35:43 -0000<BR>Received: from unknown
+(HELO code3.codeshare.ca) (24.81.185.71) by data.codeshare.ca with
+SMTP; 30 Jun 2004 12:35:43 -0000<BR>Received-SPF: neutral
+(data.codeshare.ca: domain of james@widgets.org is neutral about
+designating 24.81.185.71 as permitted sender)<BR>Received-SPF: pass
+(code3.codeshare.ca: domain of james@widgets.org designates 127.0.0.1
+as permitted sender) receiver=code3.codeshare.ca;
+client_ip=127.0.0.1; envelope-from=james@widgets.org;<BR>Received:
+from localhost (localhost [127.0.0.1]) by code3.codeshare.ca
+(8.13.0/8.13.0-SPF) with SMTP id i5UCZFSV017746 for
+jcouzens@codeshare.ca; Wed, 30 Jun 2004 05:35:54 -0700<BR>Message-Id:
+&lt;200406301235.i5UCZFSV017746@code3.codeshare.ca&gt;<BR>X-Authentication-Warning:
+code3.codeshare.ca: localhost [127.0.0.1] didn't use HELO
+protocol<BR>From: James.Couzens@code3.codeshare.ca<BR>To:
+James@code3.codeshare.ca, Couzens@code3.codeshare.ca<BR>Subject:
+Sendmail Test<BR>Date: June 30, 2004<BR>X-Spam-Flag:
+YES<BR>X-Spam-Checker-Version: SpamAssassin 2.62 (2004-01-11) on
+data.codeshare.ca<BR>X-Spam-Report: * 0.3 NO_REAL_NAME From: does not
+include a real name * 0.3 MY_HELO Sender did not HELO * 1.1
+NO_DNS_FOR_FROM Domain in From header has no MX or A DNS records *
+2.0 RCVD_IN_SORBS RBL: SORBS: sender is listed in SORBS *
+[24.81.185.71 listed in dnsbl.sorbs.net] * 2.5 RCVD_IN_DYNABLOCK RBL:
+Sent directly from dynamic IP address * [24.81.185.71 listed in
+dnsbl.sorbs.net]<BR>X-Spam-Status: Yes, hits=6.2 required=4.5
+tests=MY_HELO,NO_DNS_FOR_FROM,
+NO_REAL_NAME,RCVD_IN_DYNABLOCK,RCVD_IN_SORBS autolearn=no
+version=2.62<BR>X-Spam-Level: ******<BR>X-Evolution-Source:
+pop://jcouzens%40codeshare.ca@mail.uhfco.net/<BR>Mime-Version: 1.0</FONT></FONT></P>
+<P STYLE="margin-left: 0.2in; margin-bottom: 0in; border: 1px solid #000000; padding: 0.02in">
+<BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Questions?
+ Bugs?</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">E-Mail
+James Couzens &lt;<A HREF="mailto:jcouzens@codeshare.ca">jcouzens@codeshare.ca</A>&gt;</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Visit
+the libSPF developer forums @ <A HREF="http://forums.6o4.ca/">http://forums.6o4.ca/</A></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">Subscribe
+to the libSPF Mailinglist by sending an E-Mail to:</FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt"><A HREF="mailto:libspf-subscribe@codeshare.ca">libspf-subscribe@codeshare.ca</A></FONT></FONT></P>
+<P STYLE="margin-bottom: 0in; border: none; padding: 0in"><BR>
+</P>
+<P ALIGN=CENTER STYLE="margin-bottom: 0in; border: none; padding: 0in">
+<FONT FACE="Arial, sans-serif"><FONT SIZE=1 STYLE="font-size: 8pt">&copy;
+2004 James Couzens &lt;<A HREF="mailto:jcouzens@codeshare.ca">jcouzens@codeshare.ca</A>&gt;</FONT></FONT></P>
+<P ALIGN=CENTER STYLE="margin-bottom: 0in; border: none; padding: 0in">
+<BR>
+</P>
+</BODY>
+</HTML>

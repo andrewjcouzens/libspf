@@ -1,0 +1,55 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for v1.0.0 PRE 1 (final testing) 
+
+
+1.0p1 --
+
+ Fixed:
+ ------
+ - Fixed small memory leak in util.c where the variable 'ip' wasn't being
+   freed.  Thank you Oliver Stöneberg <oliverst@online.de>.
+ - Fixed small memory leak in main.c (SPF_smtp_from) where the check for
+   '<' and '>' in rare circumstances resulted in a 1 byte loss.  Oliver
+   did run into this as well but I had already discovered it, nevertheless
+   this last leg of testing is the hardest and his efforts are appreciated.
+
+ Removed:
+ --------
+ - N/A 
+
+ Changed:
+ --------
+ - util.c is now util.c.in which I have done to facilitate <=GCC 2.95.3
+   which complains about %zu because it doesn't understand it, and this
+   is necessary (I believe) for AMD64.
+
+ Improved/Updated:
+ -----------------
+ - "-ggdb" now prepended to CFLAGS only when --enable-debug is set
+ - cleaned up the mess in test_valgrind.pl and removed the debug '6' flag
+ 
+ New:
+ ----
+  - N/A 
+
+ libSPF Query Tool (src/spfqtool) changes:
+ -----------------------------------------
+ - N/A 
+
+ spfmilter (src/spfmilter) changes:
+ ----------------------------------
+ - N/A 
+
+EOF

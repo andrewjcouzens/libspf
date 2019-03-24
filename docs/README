@@ -1,0 +1,101 @@
+File: libspf-1.0.0-RC5/docs/README
+Date: 09/15/04 
+Desc: README for libSPF 1.0 documentation 
+
+libSPF documentation is broken down into the following components.
+Firstly there is API documentation which consists of a Doxygen
+doc tree, as well as pieces submitted by the authors of this 
+library.
+
+
+history     - History (deprecated documentation but still useful)
+
+              - You'll find all the old CHANGELOG's within this dir
+
+API         - Application Programming Interface
+
+              - DOXYGEN
+
+                - A DOXYGEN tree which encompasses the entire library
+                  breaking apart every function, type, define etc..
+                  and creating hyperlinks all throughout the pages
+                  allowing you to easily discover where a particular 
+                  piece of information originates whilst reviewing the
+                  literal code or broken down explanations and
+                  definitions of each.
+
+              - debugging_libspf_1.0.pdf
+
+                - A comprehensive document on how to interact with
+                  the libSPF debugging factility
+
+              - api_cache.html  
+
+                - A short, but informative article which talk sbaout the
+                  DNS caching available within libSPF and why the cache
+                  is implemented the way it is (AVL-Tree instead of the
+                  commonly used hash table).
+
+RFC           - Requests for Comments
+
+                - This is the technical document used as a roadmap for
+                  libSPF.  It describes the ways SPF may be implemented
+                  from the optional to the mandatory.
+
+qmail         - qmail (best damn mta on earth)
+             
+                - netqmail-1.05-libspf-1.0.0-RC5-HOWTO.html
+                  - A step by step (with literal output) process of how
+                    to patch netqmail-1.05 with libSPF.
+
+                - tcpserver_vars.html
+                  - A comprehensive explanation of the tcpserver variables
+                    which libSPF adds which are available for use within
+                    qmail and facilitate controlling the behaviour of
+                    libSPF without ever touching a control file.
+
+                - control_files.html
+                  - A document that is similar to the tcpserver_vars 
+                    document except that its focus is on explaining  all of
+                    the available qmail control files that one can create
+                    to facilitate controlling the behaviour of libSPF.
+
+Sendmail      - Sendmail
+
+                - sendmail-8.13.1+libspf-1.0-HOWTO.pdf 
+                  - A step by step (with literal output) process of how to
+                    patch Sendmail v8.13.1 with libSPF.
+
+                - sendmail-8.12.x-libspf-0.2x-HOWTO
+                  - A HOWTO for patching Sendmail v8.12.x with libSPF
+
+                - sendmail.cf.example
+                  - An example sendmail.cf file from a Sendmail server after
+                    having been patched with libSPF
+
+spfmilter     - Sendmail 'spfmilter'
+
+              - spfmilter-HOWTO
+	        - A Quick guide to installing the Sendmail spfmilter
+		
+	      - spf-redhat.init
+	        - A Red Hat specific init script
+		
+	      - spfmilter.sysconfig 
+	        - A spfmilter config file example
+		
+Courier-MTA   - The Courier MTA
+                - Documentation relative to patching Courier with libSPF.
+
+spfqtool      - The libSPF Query Tool
+                - The source code is available featuring syntax highlighted
+                  HTML.  The goal of spfqtool is threefold:
+                 
+                  1) Provide an easy method to test libSPF for RFC compliance.
+                  2) Provide would-be developers with an implementation
+                     example of the libSPF API
+                  3) Provide end-users with a tool to easy and powerfully test
+                     their SPF published records for accuracy.
+
+
+EOF

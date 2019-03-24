@@ -1,0 +1,20 @@
+SPF Query Tool (spfqtool)
+--------------------------------------------------------------------------------
+
+The query tool is enabled and compiled by default.  If you do not wish for this
+to be the case please return to the root of this package (cd ../../) and
+re-run configure like so:
+
+./configure --disable-debug --disable-debug-logfile --enable-paranoid-malloc 
+
+Of course feeling free to append or prepend any other compilation flags you
+may wish.
+
+If you do enable debugging, add '-d 6' in with your queries and:
+tail -f /var/log/spf.log.  This is where you will find all debugging output 
+instead of to stderr or stdout.
+
+Please ensure that whomever you are running 'spfqtool' as has appropriate 
+writing permissions to /var/log.  Mode 0644 would be generally appropriate
+depending on how anal retentive your system permissions are.
+

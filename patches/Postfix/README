@@ -1,0 +1,48 @@
+File: libspf-1.0.0/patches/Postfix/README
+Date: 09/15/04
+Desc: libSPF 1.0 patching Postfix README document
+
+Postfix+libSPF
+
+Patches are in subdirectories named according to the version of
+Postfix that they were made against.
+
+2.1.x - Patches against the 2.1.x versions of Postfix
+
+You are pretty much on your own for now until a HOWTO is ready,
+if you are capable, feel free to submit one!  For now the
+following will have to do:
+
+Unpack postfix v2.1.4 (or something close I suppose).
+
+cd postfix-2.1.4
+make
+
+once its done making apply the patch:
+
+patch -p1 < ../libspf-1.0.0/patches/Postfix/2.1.x/postfix-2.1.4-libspf-1.0-RC6.diff
+
+Output should look something like this:
+
+patching file include/mail_params.h
+patching file src/global/mail_params.h
+patching file src/smtpd/smtpd.c
+patching file src/smtpd/smtpd_check.c
+patching file src/smtpd/smtpd_state.c
+patching file src/smtpd/Makefile
+patching file src/smtpd/smtpd.h
+patching file conf/spf.cf.example
+
+Then:
+
+make clean && make
+
+Do whatever you normally would do with a Postfix installation...I must
+apologize I'm not exceptionally familiar with it since I prefer qmail
+and haven't had to look elsewhere since.
+
+If you are familiar with Postfix then you will find conf/spf.cf.example
+particularly comforting.
+
+
+EOF

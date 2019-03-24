@@ -1,0 +1,23 @@
+File: libspf-1.0.0/patches/qmail/README
+Date: 09/15/04
+Desc: libSPF 1.0 patching qmail README document
+
+qmail+libSPF
+
+Patches are in subdirectories named according to the version of
+qmail that they were made against.
+
+1.03 - last official version of qmail by djb
+1.04 - First official fork of qmail by Russell Nelson & Co.
+1.05 - Second official fork of qmail by Russell Nelson & Co.
+
+Patch qmail, make setup check, and be on your way.  The control
+files libSPF uses are all found in the controls subdirectory.
+
+Full documentation can be found in the 'docs' directory at the
+root of the archive this README came from.
+
+There is also a HOWTO now available from the libSPF.org website
+at the following url: http://libspf.org/qmail/index.html
+
+EOF

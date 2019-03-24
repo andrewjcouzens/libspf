@@ -1,0 +1,148 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="./libSPF.css">
+<title>qmail - tcpserver variables defined by libSPF</title>
+</head>
+<body>
+
+<!-- File:    tcpserver_vars.txt                                           -->
+<!-- Author:  James Couzens <jcouzens@codeshare.ca>                        -->
+<!-- Date:    February 4, 2004                                             -->
+<!-- Updated: August 3, 2004 - Added SPF_DEBUG_STATE                       -->
+<!-- MTA:     qmail - http://qmail.org                                     -->
+<!-- Info:    Describes the 'tcpserver' variables defined by libSPF in the --> 
+<!--          libSPF qmail patch.                                          -->
+
+<!-- Start outside table -->
+<table cellspacing=0 cellpadding=0 border=0 width=600>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside header table -->
+    <table cellspacing=1 cellpadding=1 border=0 width=100%>
+      <tr>
+        <td class=hdr colspan=2>tcpserver Global Vars:</td>
+      </tr>
+    </table> 
+    <!-- End inside header table -->
+
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+  </tr>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside control vars tabel --> 
+    <table cellpadding=4 cellspacing=1 border=0 width=100%>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfaction target=_self>SPF_ACTION</a></b>&nbsp;</td>
+        <td>&nbsp;Type of action to take based on SPF result</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spftarpit target=_self>SPF_TARPIT</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable tarpitting</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spftarpittime target=_self>SPF_TARPIT_TIME</a></b>&nbsp;</td>
+        <td>&nbsp;How long to tarpit for</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfsexplainstate target=_self>SPF_EXPLAIN_STATE</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'SPF Explanations'</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfsexplanation target=_self>SPF_EXPLANATION</a></b>&nbsp;</td>
+        <td>&nbsp;Define the Explanation to message provide</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spftrustedstate target=_self>SPF_TRUSTED_STATE</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Trusted Forwarder' mode</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spftrustedforwarder target=_self>SPF_TRUSTED_FORWARDER</a></b>&nbsp;</td>
+        <td>&nbsp;Define the Trusted Forwarder SPF Query to execute</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfguessstate target=_self>SPF_GUESS_STATE</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Best Guess' mode</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfbestguess target=_self>SPF_BEST_GUESS</a></b>&nbsp;</td>
+        <td>&nbsp;Define the Best Guess SPF Query to execute</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfheaderstate target=_self>SPF_HEADER_STATE</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Received-SPF:' header tagging</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b><a href=control_files.html#spfdebugstate target=_self>SPF_DEBUG_STATE</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable libSPF debug logging (/var/log/spf.log)</td>
+      </tr>
+    </table>
+    <!-- End inside control vars table -->
+
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+  </tr>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside control vars table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr>
+        <td class=hdr>
+By setting these in your environment with appropriate values you can nicely
+alter the behaviour of libSPF for an individual person or groups of people on
+your network.  A great example is by placing <b>SPF_ACTION</b> inside of
+tcp.smtp and setting it to a 0 for 127.0.0.1.
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+127.:allow,RELAYCLIENT="",RBLSMTPD="",SPF_ACTION="0"
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+This way 127.0.0.1 never has SPF checks performed on them.  I'm sure you get
+the idea.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside control vars table -->
+
+    </td>
+  </tr>
+</table>
+<!-- End outside table -->
+
+<br>
+<br>
+
+<!-- Start footer table -->
+<table cellpadding=0 cellspacing=0 border=0 width=600>
+  <tr>
+    <td><p class=footer align=center>
+        (c) 2004 James Couzens (jcouzens@codeshare.ca)
+        </p>
+    </td>
+  </tr>
+</table>
+<!-- End footer table -->
+
+<br>
+
+</body>
+</html>

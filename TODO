@@ -1,0 +1,130 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+| The libSPF Todo list!                                                        |
+--------------------------------------------------------------------------------
+|                                                                              |
+|  File:   TODO                                                                |
+|  Author: James Couzens <jcouzens@codeshare.ca>                               |
+|  Date:   Fri Oct  8 07:23:21 PDT 2004 - Updated                              |
+|                                                                              |
+|  Info:   A list of things either 'To do' or awaiting completion as regards   |
+|          this library, or things planned for the future.                     |
+|                                                                              |
+--------------------------------------------------------------------------------
+
+  Table of Contents
+  -----------------
+
+    [1] ....... Hey I want to help!
+
+    [2] ....... Status of Patches against MTA's
+
+    [3] ....... Pending Patches
+
+    [4] ....... Known BUGS!
+
+    [5] ....... Coming Soon
+
+    [6] ....... Wishlist
+
+
+--------------------------------------------------------------------------------
+| 1 |  Hey I want to help!                                                     |
+--------------------------------------------------------------------------------
+
+  Great! See the table below and grab something to do! Sign up at our developer
+  forums located at http://forums.6o4.ca and make a post indicating what you
+  are planning on or are working on and try to provide an estimated time to
+  completion.
+
+
+--------------------------------------------------------------------------------
+| 2 | Patches against Mail Transfer Agents:                                    |
+--------------------------------------------------------------------------------
+                                                             
+  ----------------------|----------------------|--------------------
+  | Mail Transfer Agent | Version | % Complete | Stability rating  |
+  |-------------------------------|--------------------------------|
+  | Courier             | 0.45.4  | 100%       | STABLE-PRODUCTION |
+  |---------------------|----------------------|-------------------|
+  | Exchange            | 2000/3  | 0%         | N/A               |
+  |-------------------------------|--------------------------------|
+  | Exim                | 3.x     | 0%         | N/A               |
+  | Exim                | 4.x     | 0%         | N/A               |
+  |-------------------------------|--------------------------------|
+  | Postfix             | 2.1.4   | 100%       | BROKEN-ALPHA      |
+  |---------------------|----------------------|-------------------|
+  | qmail               | 1.03    | 100%       | STABLE-PRODUCTION |
+  | qmail               | 1.04    | 100%       | STABLE-PRODUCTION |
+  | qmail               | 1.05    | 100%       | STABLE-PRODUCTION |
+  |-------------------------------|--------------------------------|
+  | Sendmail            | 8.12.10 | 100%       | STABLE-PRODUCTION |
+  | Sendmail            | 8.12.11 | 100%       | STABLE-PRODUCTION |
+  | Sendmail            | 8.12.12 | 100%       | STABLE-PRODUCTION |
+  | Sendmail            | 8.13.0  | 100%       | STABLE-PRODUCTION |
+  | Sendmail            | 8.13.1  | 100%       | STABLE-TESTING    |
+  |-------------------------------|--------------------------------|
+ 
+
+--------------------------------------------------------------------------------
+| 3 | Pending Patches                                                          |
+--------------------------------------------------------------------------------
+           .
+  Class    : RFC Requirement
+  ----------------------------------------------------------------------------
+  Label    : IPv6 Integration
+  Received : Fri Jul 16 14:32:03 PDT 2004
+  Status   : Patch received and applied, currently undergoing testing.
+             Update (08/04/04) - I have not had time to properly test this patch
+             yet and as such it is not included in the RC5 release.  If you have
+             the facilities to test this patch please contact me (james) at
+             jcouzens@codeshare.ca.
+  Author   : Stuart Weatherby <sweatherby@codeshare.ca>
+           `
+
+--------------------------------------------------------------------------------
+| 4 | Known BUGS                                                               |
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+| 5 | Coming Soon                                                              |
+--------------------------------------------------------------------------------
+         . 
+  Item   : Windows (win32) Port 
+  Status : 40%
+         |
+  Item   : implement rest of native DNS handling
+  Status : 90%
+         |
+  Item   : ADNS
+  Status : 90%
+         |
+  Item   : DJBDNS
+  Status : 90%
+         ` 
+
+
+--------------------------------------------------------------------------------
+| 6 | Wishlist                                                                 |
+--------------------------------------------------------------------------------
+         .
+  Item   : Integrate alternative string and memory management library from 
+         : qmail (djbc)
+  Status : 0%
+         ` 
+
+
+-- EOF -------------------------------------------------------------------------

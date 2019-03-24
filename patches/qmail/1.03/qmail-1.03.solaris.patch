@@ -1,0 +1,392 @@
+--- qmail-1.03/conf-patrn.orig	Tue Apr 15 09:19:07 1997
++++ qmail-1.03/conf-patrn	Tue Apr 15 00:05:23 1997
+@@ -1,4 +1,4 @@
+-002
++022
+ 
+ These stat bits are not allowed in ~ and ~/.qmail.
+ 
+--- qmail-1.03/conf-cc	1998/06/15 20:56:34	1.1
++++ qmail-1.03/conf-cc	1998/06/15 20:56:45
+@@ -1,3 +1,3 @@
+-cc -O2 -DINET6 -DTLS=20040120 -I/usr/include/openssl -I/usr/kerberos/include
++cc -O -DINET6 -DTLS=20040120 -I/usr/include/openssl -I/usr/kerberos/include
+ 
+ This will be used to compile .c files.
+diff -ur libspf.24/Makefile libspf.24.new/Makefile
+--- qmail-1.03/libspf.24/Makefile	2004-02-25 09:08:30.000000000 -0600
++++ qmail-1.03/libspf.24.new/Makefile	2004-04-03 15:53:00.816287000 -0600
+@@ -32,6 +32,10 @@
+ 
+ .PHONY : all clean
+ 
++static : $(STATIC_OBJS)
++
++shared : $(SHARED_OBJS)
++
+ shared/%.o : %.c
+ 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -fPIC -c -o $@ $^
+ 
+@@ -42,7 +42,7 @@
+ static/%.o : %.c
+ 	$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c -o $@ $^
+ 
+-libspf.a : -lresolv $(STATIC_OBJS)
++libspf.a : $(STATIC_OBJS)
+ 	$(AR) r $@ $^
+ 
+ libspf.so.1.0.1 : LDFLAGS+=-shared -lresolv -Wl,-soname,libspf.so.1
+diff -ur libspf.24/deprecated/error.h libspf.24.new/deprecated/error.h
+--- qmail-1.03qmail-1.03//libspf.24/deprecated/error.h	2004-02-25 04:44:58.000000000 -0600
++++ qmail-1.03/libspf.24.new/deprecated/error.h	2004-04-04 00:04:25.589720000 -0600
+@@ -52,7 +52,9 @@
+ 
+ #include "spf.h"
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ void ERROR_ns_no_data(void);
+ void ERROR_ns_fail(void);
+@@ -63,7 +65,9 @@
+ void ERROR_pton(const char *s, const char *rip);
+ void ERROR_explain(peer_info_t *peer_info);
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif
+ 
+diff -ur libspf.24/dns.h libspf.24.new/dns.h
+--- qmail-1.03/libspf.24/dns.h	2004-02-25 04:34:25.000000000 -0600
++++ qmail-1.03/libspf.24.new/dns.h	2004-04-04 00:03:53.320969000 -0600
+@@ -56,7 +56,9 @@
+ #include <netdb.h>
+ #include <arpa/inet.h>    /* in_addr struct */
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ /*
+ *  For reference purposes commented out are the constants based on 
+@@ -84,7 +86,9 @@
+             const u_char *msg_ptr, const u_char *eom_ptr, u_char *rd_ptr, char *buf,
+             const char *mta);
+   
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif
+ 
+Only in libspf.24.new: error.h
+diff -ur libspf.24/macro.h libspf.24.new/macro.h
+--- qmail-1.03/libspf.24/macro.h	2004-02-25 05:23:50.000000000 -0600
++++ qmail-1.03/libspf.24.new/macro.h	2004-04-04 00:04:42.981881000 -0600
+@@ -53,14 +53,18 @@
+ 
+ #include "spf.h"
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ char      *MACRO_expand(peer_info_t *peer_info, const char *s);
+ char      *MACRO_process(peer_info_t *peer_info, char *macro, const size_t size);
+ char      *MACRO_eatmore(char *macro, char *s);
+ SPF_BOOL  MACRO_addbuf(strbuf_t *master, char *s, const size_t size);
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif
+ 
+diff -ur libspf.24/main.h libspf.24.new/main.h
+--- qmail-1.03/libspf.24/main.h	2004-02-25 06:12:48.000000000 -0600
++++ qmail-1.03/libspf.24.new/main.h	2004-04-04 00:03:26.848163000 -0600
+@@ -53,7 +53,9 @@
+ 
+ #include "spf.h"
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ #define FL_A            2           /* normal debugging */
+ #define FL_B            4           /* verbose debugging */
+@@ -128,6 +130,8 @@
+ char        *SPF_build_header(peer_info_t *peer_info);
+ char        *SPF_get_explain(peer_info_t *peer_info);
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif /* main.h */
+diff -ur libspf.24/spf.h libspf.24.new/spf.h
+--- qmail-1.03/libspf.24/spf.h	2004-02-25 06:13:01.000000000 -0600
++++ qmail-1.03/libspf.24.new/spf.h	2004-04-04 00:02:17.225381000 -0600
+@@ -49,7 +49,9 @@
+ #include <sys/types.h>    /* typedefs */
+ #include <arpa/inet.h>    /* in_addr struct */
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ /* spf protocol version we support */
+ #define SPF_VERSION 1
+@@ -239,6 +241,12 @@
+ } strbuf_node_t;
+ 
+ 
++#ifdef sparc
++typedef unsigned char u_int8_t;
++typedef unsigned short u_int16_t;
++typedef unsigned long u_int32_t;
++#endif
++
+ /* strbuf_t
+ *
+ *  This structure is used exclusively by marco.c functions and is used
+@@ -366,6 +374,8 @@
+ extern char         *SPF_build_header(peer_info_t *peer_info);
+ extern char         *SPF_get_explain(peer_info_t *peer_info);
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif /* spf.h */
+diff -ur libspf.24/util.h libspf.24.new/util.h
+--- qmail-1.03/libspf.24/util.h	2004-02-25 05:48:58.000000000 -0600
++++ qmail-1.03/libspf.24.new/util.h	2004-04-04 00:05:06.505384000 -0600
+@@ -57,7 +57,9 @@
+ #include <ctype.h>        /* isdigit .. */
+ #include "main.h"         /* for the flags man */
+ 
++#ifndef sparc
+ __BEGIN_DECLS
++#endif
+ 
+ /*
+ * In ANSI C, and indeed any rational implementation, size_t is also the
+@@ -177,7 +179,9 @@
+ char          *UTIL_reverse(const char *s, const char delim);
+ SPF_BOOL      UTIL_addnode(split_str_t *master, const char *s, SPF_BOOL last);
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif
+ 
+diff -ur qmail-1.03/libspf.24/Makefile qmail-1.03.new/libspf.24/Makefile
+--- qmail-1.03/libspf.24/Makefile	2004-04-04 15:17:09.511679000 -0500
++++ qmail-1.03.new/libspf.24/Makefile	2004-04-04 15:15:38.972623000 -0500
+@@ -7,11 +7,11 @@
+ #
+ ################################################################################
+ # This is the default, LOTS of debugging, safe to use on MTA
+-CFLAGS:=-Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -D_SPF_DEBUG_LOGFILE
++#CFLAGS:=-Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG -D_SPF_DEBUG_LOGFILE
+ # This is very verbose over console, not suitable for MTA
+ #CFLAGS:=-Wall -ggdb -D_BSD_SOURCE -DDEBUG -D_SPF_DEBUG
+ # No debugging, not recommended
+-#CFLAGS:=-Wall -ggdb -D_BSD_SOURCE
++CFLAGS:=-Wall -ggdb -D_BSD_SOURCE
+ CPPFLAGS:=
+ LDFLAGS:=-lresolv
+ ################################################################################
+@@ -32,7 +32,7 @@
+ 
+ .PHONY : all clean
+ 
+-static : $(STATIC_OBJS)
++static : $(STATIC_OBJS) libspf.a
+ 
+ shared : $(SHARED_OBJS)
+ 
+diff -ur qmail-1.03/libspf.24/tools/Makefile qmail-1.03.new/libspf.24/tools/Makefile
+--- qmail-1.03/libspf.24/tools/Makefile	2004-02-25 07:49:38.000000000 -0600
++++ qmail-1.03.new/libspf.24/tools/Makefile	2004-04-04 15:04:49.610410000 -0500
+@@ -6,9 +6,10 @@
+ # Contributed by Orngetide from #c on EFNet 
+ #
+ ################################################################################
+-CFLAGS:=-Wall -ggdb3 -D_GNU_SOURCE -D_BSD_SOURCE -DDEBUG
++#CFLAGS:=-Wall -g -D_GNU_SOURCE -D_BSD_SOURCE -DDEBUG
++CFLAGS:=-Wall -g -D_GNU_SOURCE -D_BSD_SOURCE
+ CPPFLAGS:=
+-LDFLAGS:=
++LDFLAGS:=-lnsl
+ ################################################################################
+ TARGETS:= \
+   spfquery.o
+@@ -28,7 +29,7 @@
+ 	perl test.pl
+ 
+ clean :
+-	-$(RM) $(OBJS) $(TARGETS) spfquery-dyn spfquery-static spfquery
++	-$(RM) $(OBJS) $(TARGETS) *.o spfquery-dyn spfquery-static spfquery
+ 
+ .PHONY : all clean install test
+ 
+@@ -39,6 +40,6 @@
+ shared : spfquery.o 
+ 	$(CC) $(CFLAGS) $(TARGET_ARCH) -o spfquery $^ $(LDFLAGS)
+ 
+-static : spfquery.o ../libspf.a
+-	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH) -o spfquery $^
++static : spfquery.o ../libspf.a strsep.o
++	$(CC) $(CFLAGS) $(LDFLAGS) $(TARGET_ARCH) -lresolv -o spfquery $^
+ 
+diff -ur qmail-1.03/libspf.24/tools/spfquery.c qmail-1.03.new/libspf.24/tools/spfquery.c
+--- qmail-1.03/libspf.24/tools/spfquery.c	2004-02-25 05:44:41.000000000 -0600
++++ qmail-1.03.new/libspf.24/tools/spfquery.c	2004-04-04 15:03:51.426411000 -0500
+@@ -104,6 +104,7 @@
+  
+   while (1)
+   {
++#ifndef sparc
+     int option_index = 0;
+      
+     static struct option long_options[] =
+@@ -127,6 +128,9 @@
+ 
+     c = getopt_long_only (argc, argv, "f:i:s:h:r:v:ltgemcn",
+ 			  long_options, &option_index);
++#else
++    c = getopt(argc, argv, "f:i:s:h:r:v:ltgemcn");
++#endif
+ 
+     if (c == -1)
+       break;
+diff -ur qmail-1.03/libspf.24/tools/spfquery.h qmail-1.03.new/libspf.24/tools/spfquery.h
+--- qmail-1.03/libspf.24/tools/spfquery.h	2004-02-25 07:24:17.000000000 -0600
++++ qmail-1.03.new/libspf.24/tools/spfquery.h	2004-04-04 15:01:25.626316000 -0500
+@@ -56,16 +56,22 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#ifndef sparc
+ #include <getopt.h>
++#endif
+ 
+ #include "../spf.h"
+  
++#ifndef sparc
+  __BEGIN_DECLS
++#endif
+  
+ void usage();
+ int main( int argc, char *argv[] );
+ 
++#ifndef sparc
+ __END_DECLS
++#endif
+ 
+ #endif
+ 
+diff -ur qmail-1.03/libspf.24/tools/test.pl qmail-1.03.new/libspf.24/tools/test.pl
+--- qmail-1.03/libspf.24/tools/test.pl	2004-02-08 00:51:14.000000000 -0600
++++ qmail-1.03.new/libspf.24/tools/test.pl	2004-04-04 15:34:34.657720000 -0500
+@@ -105,7 +105,7 @@
+       }
+   } else {
+ 
+-      open( SPFQUERY, "$SPFPROG -ipv4=\"$ipv4\" -sender=\"$sender\" -helo=\"$domain\" -local=\"$localpolicy\" -default_explanation=\"explanation\" -sanitize=1 |");
++      open( SPFQUERY, "$SPFPROG -i \"$ipv4\" -s \"$sender\" -h \"$domain\" -l \"$localpolicy\" -e \"explanation\" -c 1 |");
+ 
+       my ($result, $smtp_comment, $header_comment);
+       chomp( $result = <SPFQUERY> );
+@@ -122,13 +122,13 @@
+                    ok($header_comment, $expected_header_comment)));
+ 
+       if (not $ok) {
+-	print "spfquery -ipv4=\"$ipv4\" -sender=\"$sender\" -helo=\"$domain\" -local=\"$localpolicy\" -default_explanation=\"explanation\" -sanitize=1 |\n";
++	print "spfquery -i \"$ipv4\" -s \"$sender\" -h \"$domain\" -l \"$localpolicy\" -e \"explanation\" -c 1 |\n";
+ 
+ 	printf "Result:         %s\n", $result;
+ 	printf "SMTP comment:   %s\n", $smtp_comment;
+ 	printf "Header comment: %s\n", $header_comment;
+ 
+-	open( SPFQUERY, "$SPFPROG -vv -ipv4=\"$ipv4\" -sender=\"$sender\" -helo=\"$domain\" -local=\"$localpolicy\" -default_explanation=\"explanation\" -sanitize=1 |");
++	open( SPFQUERY, "$SPFPROG -v v -i \"$ipv4\" -s \"$sender\" -h \"$domain\" -l \"$localpolicy\" -e \"explanation\" -c 1 |");
+ 	while(<SPFQUERY>) {
+ 	  print $_;
+ 	}
+--- qmail-1.03/libspf.24/tools/strsep.c	2004-04-04 15:03:32.000000000 -0500
++++ qmail-1.03.new/libspf.24/tools/strsep.c	2004-04-04 14:42:45.305039000 -0500
+@@ -0,0 +1,67 @@
++/* Copyright (C) 1992, 93, 96, 97, 98, 99 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++#include <string.h>
++
++#undef __strsep
++#undef strsep
++
++char *
++strsep (char **stringp, const char *delim)
++{
++  char *begin, *end;
++
++  begin = *stringp;
++  if (begin == NULL)
++    return NULL;
++
++  /* A frequent case is when the delimiter string contains only one
++     character.  Here we don't need to call the expensive `strpbrk'
++     function and instead work using `strchr'.  */
++  if (delim[0] == '\0' || delim[1] == '\0')
++    {
++      char ch = delim[0];
++
++      if (ch == '\0')
++	end = NULL;
++      else
++	{
++	  if (*begin == ch)
++	    end = begin;
++	  else if (*begin == '\0')
++	    end = NULL;
++	  else
++	    end = strchr (begin + 1, ch);
++	}
++    }
++  else
++    /* Find the end of the token.  */
++    end = strpbrk (begin, delim);
++
++  if (end)
++    {
++      /* Terminate the token and set *STRINGP past NUL character.  */
++      *end++ = '\0';
++      *stringp = end;
++    }
++  else
++    /* No more delimiters; this is the last token.  */
++    *stringp = NULL;
++
++  return begin;
++}

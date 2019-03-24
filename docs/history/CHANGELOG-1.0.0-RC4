@@ -1,0 +1,69 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+libSPF CHANGELOG for v1.0.0 Release Candidate 4 
+
+
+1.0-RC4 -
+
+ - Fixed SEGV in utility function UTIL_split_strr which ironically was 
+   discovered when Meng changed the SPF language published by pobox.com :D
+ - Fixed FreeBSD support through the integration of Autotools
+ - New team member Michael Weiner <mweiner@codeshare.ca> !  Michael is
+   effectively Package Manager and has done an OUTSTANDING job preparing SPECS
+   for Fedora Core and Red Hat as well as Ebuilds for Gentoo.  Michael is also
+   managing an integrated SendMail package which includes libSPF 1.0.
+ - New ARCH: PowerPC thanks to Troy D. Straszheim <troy@resophonic.com>
+   - New OS: OSX/Darwin 10.3 thanks to Troy.
+ - New ARCH: SPARC
+   - New OS: Sun Solaris 8.0, 9.0 [x86][SPARC] thanks to Rob McMahon
+ - New GNU/Linux Distro supported: Fedora Core 1 [x86]    Method: SRPM/RPM
+ - New GNU/Linux Distro supported: Fedora Core 1 [x86_64] Method: SRPM/RPM
+ - New GNU/Linux Distro supported: Fedora Core 2 [x86]    Method: SRPM/RPM
+ - New GNU/Linux Distro supported: Fedora Core 2 [x86_64] Method: SRPM/RPM
+ - New GNU/Linux Distro supported: Red Hat 7.3   [x86]    Method: SRPM/RPM
+ - New BSD Distro recognized: OpenBSD 3.5 [x86_64]
+ - Successful compile confirmed on Mandrake
+ - Added Autotools switch for libresolv and libbind detection.  Auto fallback
+   to libbind if libresolv can not be found and either can be disabled from
+   configure interface
+ - Replaced various sprintf's with snprintf's in util.c and main.c to remove
+   OpenBSD warnings.
+ - Fixed missing include for uintptr_t under OpenBSD
+ - Added Autotools switch for disabling the build of the SPF Query tool (its
+   enabled by default)
+ - Added full portability list to README in Section 7.0
+ - Added Autotools switch for debugging.  When enabled all debugging is dumped
+   to /var/log/spf.log by default and can be changed by editing util.h
+ - Applied suggestions by Jan Holmberg <jan@artech.se> eliminating some compiler
+   complaints relating to debugging code, and changes to SPF_close to more
+   gracefully handle a particular pointer which was only occaisonally freed.
+ - Applied patches by Rob McMahon <Rob.McMahon@warwick.ac.uk> whom I must thank
+   profusly for his considerable contribution.  Rob's submissions were integrated
+   with the existing Autotools layout and instantly facilitated portability to
+   not only new Architectures, but also other OSes on the x86 platform with ease.
+ - Removed deprecated SPF_dbg_level() function references from main.h and spf.h
+   and fixed Autoconf to install spf.h (missing directive) (Jef Poskanzer
+   <jef@acme.com>)
+ - Added additional include file with special check for OSX/Darwin 10.3 which is
+   now supported by libSPF.
+ - Removed spfquery.c due to the annoying getopt dependancy.
+ - Added newly authored spfquery.c which is a much smaller program with the same
+   functionality afforded by the old.  This program is also an excellent example
+   of how to implement spf using the libSPF API.
+ - Added HOWTO for Sendmail to the MTA section of the documentation
+ - Added 'Debugging libSPF' paper to the API section of the documentation
+ - Added Doxygen API documentation tree
+
+
+EOF

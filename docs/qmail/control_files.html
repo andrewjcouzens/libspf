@@ -1,0 +1,660 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="./libSPF.css">
+<title>qmail - tcpserver variables defined by libSPF</title>
+</head>
+<body>
+
+<!-- File:    control_vars.txt                                             -->
+<!-- Author:  James Couzens <jcouzens@codeshare.ca>                        -->
+<!-- Date:    February 4, 2004                                             -->
+<!-- Updated: August 3, 2004 - Added spfdebugstate                         -->
+<!-- MTA:     qmail - http://qmail.org                                     -->
+<!-- Info:    Describes the 'control' variables added to qmail by libSPF   --> 
+<!--          in order to interact with libSPF.                            -->
+
+<!-- Start outside table -->
+<table cellspacing=0 cellpadding=0 border=0 width=600>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside header table -->
+    <table cellspacing=1 cellpadding=1 border=0 width=100%>
+      <tr>
+        <td class=hdr colspan=2>tcpserver Global Vars:</td>
+      </tr>
+    </table> 
+    <!-- End inside header table -->
+
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+  </tr>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside control vars tabel --> 
+    <table cellpadding=4 cellspacing=1 border=0 width=100%>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfaction>spfaction</a></b>&nbsp;</td>
+        <td>&nbsp;Type of action to take based on SPF result</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spftarpit>spftarpit</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable tarpitting</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spftarpittime>spftarpittime</a></b>&nbsp;</td>
+        <td>&nbsp;How long to tarpit for</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfexplainstate>spfexplainstate</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'SPF Explanations'</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfexplanation>spfexplanation</a></b>&nbsp;</td>
+        <td>&nbsp;SPF Explanation to use</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spftrustedstate>spftrustedstate</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Trusted Forwarder' mode</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spftrustedforwarder>spftrustedforwarder</a></b>&nbsp;</td>
+        <td>&nbsp;SPF Query to use during Trusted Forwarder mode</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfguessstate>spfguesstate</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Best Guess' support</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfbestguess>spfbestguess</a></b>&nbsp;</td>
+        <td>&nbsp;SPF Query to use during Best Guess mode</td>
+      </tr>      
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfheaderstate>spfheaderstate</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable 'Received-SPF:' header tagging</td>
+      </tr>
+      <tr>
+        <td>&nbsp;<b>control/<a href=#spfdebugstate>spfdebugstate</a></b>&nbsp;</td>
+        <td>&nbsp;Enable/Disable libSPF debug logging (/var/log/spf.log)</td>
+      </tr>
+    </table>
+    <!-- End inside control vars table -->
+
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+
+    <!-- Start inside spfaction table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfaction></A>
+        <td class=example>spfaction</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp;Define how to react to various SPF results<br>
+          <br>
+          <b>Contents:</b>&nbsp;Inside this file place a single digit between 0 and 7.<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <b>Default:</b>&nbsp;1 (enabled)<br>
+          <br>
+          Below describes the behaviour of these digits:<br>
+          <br>
+          <b>0</b>: disabled<br>
+          <b>1</b>: enabled (only prepends headers, and only if spfheaderstate == 1)<br>
+          <b>2</b>: REJECT: fail; ACCEPT: pass, none, softfail, error, netural, unknown;<br>
+          <b>3</b>: REJECT: fail, softfail; ACCEPT: pass, none, error, netural, unknown;<br>
+          <b>4</b>: REJECT: fail, softfail, neutral; ACCEPT: pass, none, error, unknown;<br>
+          <b>5</b>: REJECT: fail, softfail, neutral, none; ACCEPT: pass, error, unknown;<br>
+          <b>6</b>: REJECT: fail, softfail, neutral, none, error; ACCEPT: pass, unknown;<br>
+          <b>7</b>: REJECT: fail, softfail, neutral, none, error, unknown; ACCEPT: pass;<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 1 (enabled)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+          Running higher than 2 or 3 will definitely result in a loss of email.
+          Consult the Adoption role at http://spftools.net and see the number of
+          SPF records that are parsed incorrectly, so be careful.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfaction table -->
+
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spftarpit table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spftarpit>
+        <td class=example>spftarpit</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Tarpit or 'latch-on' to a client you don't like<br>
+          <br>
+          0 (default) = disable tarpitting<br>
+          1 (enabled) = enable tarpitting<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer (time in seconds)<br>
+          <b>Default:</b>&nbsp;0 (off)<br>
+          <br>
+          Tarpitting happens based on the above set spfaction.  If the action 
+          was set to 2, then upon a softfail the process would sleep x seconds
+          and then call quit (where x is the value of spftarpittime or the
+          default 60)<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 0 (off)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+          I suggest you use this with caution, perhaps only enabling it on
+          FAIL which is something that can only happen when an SPF rule is
+          supplied, and some how the connecting client violates the policy.
+          You have been warned.  This could quite EASILY LEAD TO YOUR SERVER
+          BEING DOSSED BY SOME TURD.  DO NOT BLAME ME, DEFAULT IS OFF.
+          CONSIDER YOUR SELF WARNED.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spftarpit table -->  
+
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spftarpittime table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spftarpittime>
+        <td class=example>spftarpittime</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; How long to tarpit a client<br>
+          <b>Type:</b>&nbsp;Integer (time in seconds)<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 60 (seconds)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+           Not too short, or its pointless, but not too long or you'll be clientless
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spftarpittime table -->        
+
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfexplainstate table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfexplainstate>
+        <td class=example>spfexplainstate</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Enable or Disable giving of 'SPF Explanations'<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <b>Default:</b>&nbsp;0 (off)<br>
+          <br>
+          When set to 1, explanations will be automatically printed out after any SPF
+          query excluding SPF_PASS.  This information is designed to be informative and
+          helpful to a user who has just likely had his or her email rejected.  See the
+          above 'spfexplain' to define your own string to use instead.  The default value
+          exists within libSPF, so creating the control file is only necessary if you
+          wish to change this value.<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 0 (off)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>When set to 0, explanations are not appended.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfexplainstate table -->  
+ 
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfexplanation table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfexplanation>
+        <td class=example>spfexplanation</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Explanation to provide client in any event result but SPF_PASS<br>
+          <br>
+          <b>Type:</b>&nbsp;String<br>
+          <br>
+          This string (can include macros) is expanded and sent to the client for every    
+          result case excluding pass.  The default value exists within libspf, so creating 
+          the control file is only necessary if you wish to change this
+          value.<br>
+          <br>           
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR}
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>When set to 0, explanations are not appended.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfexplanation table --> 
+
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spftrustedstate table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spftrustedstate>
+        <td class=example>spftrustedstate</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Enable or Disable SPF Trusted Forwarder mode<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <br>
+          When set to 1, libspf will attempt to contact the site contained within that text,
+          which would be ideally a whitelisting site (anything can really go there, but this
+          particular file is here specifically to handle larger whitelisting services) that
+          would be contacted in the event an SPF query returns NONE.  The default value exists
+          within libspf, so creating the control file is only necessary if you wish to change
+          this value.<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 0 (off)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+        This is a great way to get around any hosts who refuse to publish!  Simply
+        publish for them in your own local DNS server, or you can make use of the the real
+        "Trusted Forwarder" service which has many well known "non-SPF-publishing" sites
+        already.  http://trusted-forwarder.org
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spftrustedstate table --> 
+ 
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spftrustedforwarder table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spftrustedforwarder>
+        <td class=example>spftrustedforwarder</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Define your Trusted Forwarder SPF Query<br>
+          <br>
+          <b>Type:</b>&nbsp;String<br>
+          <br>
+          This string (can include macros) is expanded and is used in the event that a 
+          connecting client's query results in NONE (no SPF record published).  libSPF
+          will then (if enabled) attempt to contact trusted-forwarder.org (default) which
+          is a global whitelisting system. You can add additional sites, or provide your
+          own.  The default value exists withinlibSPF, so creating the control file is
+          only necessary if you wish to change this value<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: v=spf1 include:spf.trusted-forwarder.org
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+          Its VERY important that this string end with a SPACE at the end!
+          Failure to do so will likely result in parse failures.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spftrustedforwarder table -->
+
+   </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfguessstate table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfguessstate>
+        <td class=example>spfguessstate</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Enable or Disable SPF Best Guess mode<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <br>
+            When an SPF query fails, and then subsequently a trusted forwarder query possibly fails,
+            libspf will attempt to perform a "best guess" query using a default string which can
+            be redefined using the 'spfguess' control file.  The default value exists within libspf,
+            so creating the control file is only necessary if you wish to change
+            this value.<br>
+            <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 0 (off)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfguessstate table --> 
+ 
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfbestguess table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfbuestguess>
+        <td class=example>spfbestguess</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Define your Best Guess SPF Query<br>
+          <br>
+          <b>Type:</b>&nbsp;String<br>
+          <br>
+          This query is looked up in an attempt to make a guess against the user in the event
+          no record is found and the trusted forwarder lookup fails.  The default value exists
+          within libspf, so creating the control file is only necessary if you wish to change
+          this value.<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: v=spf1 a/24 mx/24 ptr
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+          Its VERY important that this string end with a SPACE at the end!
+          Failure to do so will likely result in parse failures.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfbestguess table -->
+
+   </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfheaderstate table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfheaderstate>
+        <td class=example>spfheaderstate</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Enable or Disable Received-SPF: header prepending<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <br>
+          When set to 1, libspf will pre-pend "Received-SPF:" headers as per the SPF RFC
+          Internet Draft.  This are useful for third party applications such as SpamAssassin,
+          and even email clients capable of parsing headers to know where to
+          filter email to.<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 1 (on)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+        You should leave this ON.  Failure to pre-pend Received-SPF: headers will nullify
+        any possible benefit had through 3rd party Anti-Spam implementations such as SpamAssassin
+        which will look at headers and evaluate them based on their content.  It should be noted
+        however, that SpamAssassin (unless someone intentionally does this) will only
+        consider FAIL messages, because to do otherwise would be stupid.  Spammers would
+        simply tag their own messages with Received-SPF: pass messages :-)
+        <br>
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfheaderstate table --> 
+ 
+    </td>
+  </tr>
+  <tr>
+    <td><br></td>
+  </tr>
+  <tr>
+    <td class=out>
+    
+    <!-- Start inside spfdebugstate table -->
+    <table cellspacing=1 cellpadding=4 border=0 width=100%>
+      <tr><a name=spfdebugstate>
+        <td class=example>spfdebugstate</td>
+      </tr>
+      <tr>
+        <td>
+          <b>Description:</b>&nbsp; Enable or Disable libSPF debugging<br>
+          <br>
+          <b>Type:</b>&nbsp;Integer<br>
+          <br>
+          When set to anything above 0 this will enable debugging in libSPF (provided that
+          when you configured libSPF you supplied --enable-debug).  To learn more about how
+          debugging works in libSPF please read the "Debugging libSPF" PDF or TXT that
+          accompanied your distribution or see the on-line version at:
+          <a href=http://libspf.org/debugging_libspf.html target=_new>
+          http://libspf.org/debugging_libspf.html</a>.<br>
+          <br>
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+
+        <table cellpadding=1 cellspacing=1 border=1 width=100%>
+          <tr>
+            <td class=example>
+              Default: 0 (off)
+            </td>
+          </tr>
+        </table>
+
+        </td>
+      </tr>
+      <tr>
+        <td class=hdr>
+          It should be noted that Autoconf enables _SPF_DEBUG_LOGFILE by default, and the
+          only way to disable this (to get deubgging to show up on STDOUT) is to manually
+          edit the Makefile and comment out or remove the _SPF_DEBUG_LOGFILE macro leaving
+          only _SPF_DEBUG.
+        </td>
+      </tr>
+    </table>
+    <!-- End inside spfdebugstate table -->
+    
+    </td>
+  </tr>
+</table>
+<!-- End outside table -->
+
+<br>
+<br>
+
+<!-- Start footer table -->
+<table cellpadding=0 cellspacing=0 border=0 width=600>
+  <tr>
+    <td><p class=footer align=center>
+        (c) 2004 James Couzens (jcouzens@codeshare.ca)
+        </p>
+    </td>
+  </tr>
+</table>
+<!-- End footer table -->
+
+<br>
+
+</body>
+</html>

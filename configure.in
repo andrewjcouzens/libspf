@@ -1,0 +1,1511 @@
+#
+# File:   configure.in
+# Author: James Couzens <jcouzens@codeshare.ca>
+# Date:   June 15, 2004
+#
+# Info:   'AutoTools' framework for building a configure script
+#          for libSPF 
+#
+#
+#          oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+#          `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+#           888  oooo   888oooo.  Y88bo.       888   .d88'  888
+#           888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+#           888   888   888   888      `"Y88b  888          888    "
+#           888   888   888   888 oo     .d8P  888          888
+#          o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+#
+#-------------------------------------------------------------------------------
+#           An ANSI C Implementation of the Sender Policy Framework
+#-------------------------------------------------------------------------------
+
+AC_PREREQ(2.52)
+AC_INIT(libspf,1.0.0-p5,jcouzens@codeshare.ca)
+AC_CONFIG_AUX_DIR([build_tools])
+AM_INIT_AUTOMAKE(libspf,1.0.0-p5,jcouzens@codeshare.ca)
+PACKAGE=$PACKAGE_NAME
+VERSION=$PACKAGE_VERSION
+
+
+#-------------------------------------------------------------------------------
+# Required programs
+#-------------------------------------------------------------------------------
+
+AM_CONFIG_HEADER([config.h])
+#AC_CONFIG_SRCDIR([src/libspf/main.c])
+
+AC_PROG_CC
+AC_PROG_LN_S
+AC_PROG_RANLIB
+#AC_ARG_PROGRAM
+AC_PROG_MAKE_SET
+AC_PROG_CPP
+AC_PROG_INSTALL
+AM_CONDITIONAL(GCC, test x$GCC = xyes)
+
+# Auto Make
+#AM_MAINTAINER_MODE
+
+
+#-------------------------------------------------------------------------------
+# LIBTOOL
+#-------------------------------------------------------------------------------
+
+AC_PROG_LIBTOOL
+AC_SUBST(enable_shared)
+AC_SUBST(enable_static)
+AC_SUBST(LIBTOOL_DEPS)
+
+# 
+#  Making releases:
+#    LIBSPF_MICRO_VERSION += 1;
+#    LIBSPF_INTERFACE_AGE += 1;
+#    LIBSPF_BINARY_AGE += 1;
+#  if any functions have been added, set LIBSPF_INTERFACE_AGE to 0.
+#  if backwards compatibility has been broken,
+#  set LIBSPF_BINARY_AGE _and_ LIBSPF_INTERFACE_AGE to 0.
+#  
+
+LIBSPF_MAJOR_VERSION=1
+LIBSPF_MINOR_VERSION=0
+LIBSPF_MICRO_VERSION=0
+LIBSPF_INTERFACE_AGE=1
+LIBSPF_BINARY_AGE=1
+LIBSPF_VERSION=$LIBSPF_MAJOR_VERSION.$LIBSPF_MINOR_VERSION.$LIBSPF_MICRO_VERSION
+
+AC_SUBST(LIBSPF_MAJOR_VERSION)
+AC_SUBST(LIBSPF_MINOR_VERSION)
+AC_SUBST(LIBSPF_MICRO_VERSION)
+AC_SUBST(LIBSPF_VERSION)
+AC_SUBST(LIBSPF_INTERFACE_AGE)
+AC_SUBST(LIBSPF_BINARY_AGE)
+
+#  -version-info "$(LT_CURRENT):$(LT_REVISION):$(LT_AGE)" \
+#  -release $(LT_RELEASE)
+#  libtool versioning
+
+LT_CURRENT="0"
+LT_REVISION="26"
+LT_AGE="0"
+LT_RELEASE="1.0"
+
+echo ""
+echo "--------------------------------------------------------------------------------"
+echo ""
+echo "LIBTOOL Version ........ ${LIBSPF_MAJOR_VERSION}.${LIBSPF_MINOR_VERSION}.${LIBSPF_MICRO_VERSION}"
+echo "LIBTOOL Interface Age .. $LIBSPF_INTERFACE_AGE"
+echo "LIBTOOL Binary Age ..... $LIBSPF_BINARY_AGE"
+echo "LIBTOOL Current ........ $LT_CURRENT"
+echo "LIBTOOL Revision ....... $LT_REVISION"
+echo "LIBTOOL Age ............ $LT_AGE"
+echo "LIBTOOL Release ........ $LT_RELEASE"
+echo ""
+echo "--------------------------------------------------------------------------------"
+echo ""
+
+
+#-------------------------------------------------------------------------------
+# LIBTOOL relating substitutionssn
+#-------------------------------------------------------------------------------
+
+AC_SUBST(LT_RELEASE)
+AC_SUBST(LT_CURRENT)
+AC_SUBST(LT_REVISION)
+AC_SUBST(LT_AGE)
+
+
+#-------------------------------------------------------------------------------
+# Check for some library functions
+#-------------------------------------------------------------------------------
+
+AC_CHECK_LIB([c], [exit])
+AC_CHECK_LIB([nsl], [inet_pton])
+AC_CHECK_LIB([socket], [socket])
+
+AC_CHECK_LIB([spf2], [SPF_sanitize], LIBSPF2_POOPOO="true")
+if test "$LIBSPF2_POOPOO" ; then
+  AC_MSG_WARN(["My word, what is that awful stench!?  Oh its libspf2"])
+  AC_MSG_WARN(["Thanks to these trolls I have no second versioning"])
+  AC_MSG_WARN(["number... http://moscow.6o4.ca/ for more info"])
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check up on GCC 
+#-------------------------------------------------------------------------------
+
+# We don't want gcc 2.7
+AC_MSG_CHECKING([for a supported version of gcc])
+
+gcc_version=`${CC} --version | head -n 1`
+gcc_special_cflags=""
+case "${gcc_version}" in
+		2.7.*)
+			AC_MSG_RESULT([no (${gcc_version})])
+			AC_MSG_ERROR([please use a recent (>= gcc-2.95) version of gcc])
+			;;
+		2.95.*)
+			AC_MSG_RESULT([yes (${gcc_version}) using %d instead of %zu])
+      AC_SUBST(UNSIGNED_INT_ARG, "%d")
+      gcc_special_cflags="-mcpu=pentium -malign-loops=5 -malign-jumps=5 -malign-functions=5"
+			;;
+    3.*)
+      AC_MSG_RESULT([yes (${gcc_version}) using -falign instead of -malign])
+      AC_SUBST(UNSIGNED_INT_ARG, "%zu")
+      gcc_special_cflags="-mcpu=pentium -falign-loops=5 -falign-jumps=5 -falign-functions=5"
+			;;
+    4.*)
+      AC_MSG_RESULT([yes (${gcc_version}) using -falign instead of -malign])
+      AC_SUBST(UNSIGNED_INT_ARG, "%zu")
+      gcc_special_cflags="-mcpu=pentium -falign-loops=5 -falign-jumps=5 -falign-functions=5"
+			;;
+		*)
+			AC_MSG_RESULT([ok (${gcc_version})])
+      AC_SUBST(UNSIGNED_INT_ARG, "%zu")
+			;;
+esac
+
+
+#-------------------------------------------------------------------------------
+# Define special resolver flags for various operating systems
+#-------------------------------------------------------------------------------
+
+case "$host" in
+  *-*-darwin*)
+    AC_DEFINE([_WITH_DARWINPPC],[],["Darwin/OSX"])
+    ;;
+  *-*-sunos4.1.1*)
+    LIBSPF_RESOLV_LIB="-lnsl -lsocket"
+    ;;
+  *-*-solaris*)
+    extralibflags="-R$libdir"
+    AC_MSG_WARN(Solaris install detected.  Using extralibflags for linking: $extralibflags)
+    LIBSPF_RESOLV_LIB="-lnsl -lsocket"
+    ;;
+  *-*-sunos*)
+    LIBSPF_RESOLV_LIB="-lnsl -lsocket"
+    ;;
+  *-*-freebsd*)
+    AC_DEFINE([_WITH_FREEBSD],[],["FreeBSD"])
+    LIBSPF_RESOLV_LIB="-lc"
+    ;;
+  *-*-netbsd*)
+    ;;
+  *-*-openbsd*)
+    AC_DEFINE([_WITH_OPENBSD],[],["OpenBSD"])
+    ;;
+  *)
+    extralibflags=""
+    LIBSPF_RESOLV_LIB="-lresolv"
+   ;;
+esac
+#AC_DEFINE_UNQUOTED(LIBSPF_RESOLV_LIB,"$LIBSPF_RESOLV_LIB","")
+
+#-------------------------------------------------------------------------------
+# Checks for header files.
+#-------------------------------------------------------------------------------
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS([arpa/inet.h, netdb.h, netinet/in.h, stdlib.h, \
+  string.h, strings.h, sys/socket.h unistd.h, error.h, inttypes.h])
+
+
+#-------------------------------------------------------------------------------
+# Required Types, structures and other compiler requirements
+#-------------------------------------------------------------------------------
+
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_SIZE_T
+AC_STRUCT_TM
+AC_C_CHAR_UNSIGNED
+AC_CHECK_TYPES([u_char, time_t])
+
+
+#-------------------------------------------------------------------------------
+#  Required functions
+#-------------------------------------------------------------------------------
+
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_FUNC_STRFTIME
+AC_CHECK_FUNCS([gethostbyname, inet_ntoa, memset, strcasecmp,  \
+  localtime_r, strchr, strdup, strrchr, strstr, mkdir])
+
+
+#-------------------------------------------------------------------------------
+# __BEGIN_DECLS / __END_DECLS defined ?
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING([__BEGIN_DECLS])
+AC_COMPILE_IFELSE([
+#include <features.h>
+__BEGIN_DECLS
+extern int x;
+__END_DECLS],
+  [AC_MSG_RESULT(yes)
+   AC_DEFINE(HAVE__BEGIN_DECLS,1,
+[Define to 1 if declarations in headers are surrounded by __{BEGIN,END}_DECLS])
+   AC_SUBST(__BEGIN_DECLS,__BEGIN_DECLS)
+   AC_SUBST(__END_DECLS,__END_DECLS)],
+  [AC_MSG_RESULT(no)
+   AC_SUBST_FILE(__BEGIN_DECLS_INCL)
+   __BEGIN_DECLS_INCL=$srcdir/conf/begin_decls
+   AC_SUBST_FILE(__END_DECLS_INCL)
+   __END_DECLS_INCL=$srcdir/conf/end_decls]
+)
+
+
+#-------------------------------------------------------------------------------
+# Unsigned int types
+#-------------------------------------------------------------------------------
+
+dnl AC_COMPILE_CHECK_SIZEOF (TYPE SUPPOSED-SIZE)
+dnl abort if the given type does not have the supposed size
+AC_DEFUN([AC_COMPILE_CHECK_SIZEOF],
+    [AC_MSG_CHECKING(that size of $1 is $2)
+    AC_TRY_COMPILE([],[switch (0) case 0: case (sizeof ($1) == $2):;],[],
+        [AC_MSG_ERROR([can not build a default inttypes.h])])
+    AC_MSG_RESULT([yes])])
+
+dnl Our own version of AC_CHECK_SIZEOF(int); fixes a bug when sizeof() can't
+dnl be printed with "%d", and avoids a warning for cross-compiling.
+
+AC_MSG_CHECKING(size of int)
+AC_CACHE_VAL(ac_cv_sizeof_int,
+	[AC_TRY_RUN([#include <stdio.h>
+		main()
+		{
+		  FILE *f=fopen("conftestval", "w");
+		  if (!f) exit(1);
+		  fprintf(f, "%d\n", (int)sizeof(int));
+		  exit(0);
+		}],
+	    ac_cv_sizeof_int=`cat conftestval`,
+	    ac_cv_sizeof_int=0,
+	    AC_MSG_ERROR(failed to compile test program))])
+AC_MSG_RESULT($ac_cv_sizeof_int)
+AC_DEFINE_UNQUOTED(SIZEOF_INT, [$ac_cv_sizeof_int], [Check to fix sizeof bug that can't print %d])
+#AC_DEFINE([SIZEOF_INT], [$ac_cv_sizeof_int], [Check to fix sizeof bug that can't print %d])
+
+AC_DEFUN([AC_CREATE_STDINT_H],
+[# ------ AC CREATE STDINT H -------------------------------------
+AC_MSG_CHECKING([for stdint-types....])
+ac_stdint_h=`echo ifelse($1, , _stdint.h, $1)`
+if test "$ac_stdint_h" = "stdint.h" ; then
+ AC_MSG_RESULT("(are you sure you want them in ./stdint.h?)")
+elif test "$ac_stdint_h" = "inttypes.h" ; then
+ AC_MSG_RESULT("(are you sure you want them in ./inttypes.h?)")
+else
+ AC_MSG_RESULT("(putting them into $ac_stdint_h)")
+fi
+
+inttype_headers=`echo inttypes.h sys/inttypes.h sys/inttypes.h $2 \
+| sed -e 's/,/ /g'`
+
+ ac_cv_header_stdint_x="no-file"
+ ac_cv_header_stdint_o="no-file"
+ ac_cv_header_stdint_u="no-file"
+ for i in stdint.h $inttype_headers ; do
+   unset ac_cv_type_uintptr_t
+   unset ac_cv_type_uint64_t
+   _AC_CHECK_TYPE_NEW(uintptr_t,[ac_cv_header_stdint_x=$i],dnl
+     continue,[#include <$i>])
+   AC_CHECK_TYPE(uint64_t,[and64="(uint64_t too)"],[and64=""],[#include<$i>])
+   AC_MSG_RESULT(... seen our uintptr_t in $i $and64)
+   break;
+ done
+ if test "$ac_cv_header_stdint_x" = "no-file" ; then
+ for i in stdint.h $inttype_headers ; do
+   unset ac_cv_type_uint32_t
+   unset ac_cv_type_uint64_t
+   AC_CHECK_TYPE(uint32_t,[ac_cv_header_stdint_o=$i],dnl
+     continue,[#include <$i>])
+   AC_CHECK_TYPE(uint64_t,[and64="(uint64_t too)"],[and64=""],[#include<$i>])
+   AC_MSG_RESULT(... seen our uint32_t in $i $and64)
+   break;
+ done
+ if test "$ac_cv_header_stdint_o" = "no-file" ; then
+ for i in sys/types.h $inttype_headers ; do
+   unset ac_cv_type_u_int32_t
+   unset ac_cv_type_u_int64_t
+   AC_CHECK_TYPE(u_int32_t,[ac_cv_header_stdint_u=$i],dnl
+     continue,[#include <$i>])
+   AC_CHECK_TYPE(uint64_t,[and64="(u_int64_t too)"],[and64=""],[#include<$i>])
+   AC_MSG_RESULT(... seen our u_int32_t in $i $and64)
+   break;
+ done
+ fi
+ fi
+
+# ----------------- DONE inttypes.h checks MAYBE C basic types --------
+
+if test "$ac_cv_header_stdint_x" = "no-file" ; then
+   AC_COMPILE_CHECK_SIZEOF(char)
+   AC_COMPILE_CHECK_SIZEOF(short)
+   AC_COMPILE_CHECK_SIZEOF(int)
+   AC_COMPILE_CHECK_SIZEOF(long)
+   AC_COMPILE_CHECK_SIZEOF(void*)
+   ac_cv_header_stdint_test="yes"
+else
+   ac_cv_header_stdint_test="no"
+fi
+
+# ----------------- DONE inttypes.h checks START header -------------
+_ac_stdint_h=AS_TR_CPP(_$ac_stdint_h)
+AC_MSG_RESULT(creating $ac_stdint_h : $_ac_stdint_h)
+echo "#ifndef" $_ac_stdint_h >$ac_stdint_h
+echo "#define" $_ac_stdint_h "1" >>$ac_stdint_h
+echo "#ifndef" _GENERATED_STDINT_H >>$ac_stdint_h
+echo "#define" _GENERATED_STDINT_H '"'$PACKAGE $VERSION'"' >>$ac_stdint_h
+if test "$GCC" = "yes" ; then
+  echo "/* generated using a gnu compiler version" `$CC --version` "*/" \
+  >>$ac_stdint_h
+else
+  echo "/* generated using $CC */" >>$ac_stdint_h
+fi
+echo "" >>$ac_stdint_h
+
+if test "$ac_cv_header_stdint_x" != "no-file" ; then
+   ac_cv_header_stdint="$ac_cv_header_stdint_x"
+elif  test "$ac_cv_header_stdint_o" != "no-file" ; then
+   ac_cv_header_stdint="$ac_cv_header_stdint_o"
+elif  test "$ac_cv_header_stdint_u" != "no-file" ; then
+   ac_cv_header_stdint="$ac_cv_header_stdint_u"
+else
+   ac_cv_header_stdint="stddef.h"
+fi
+
+# ----------------- See if int_least and int_fast types are present
+unset ac_cv_type_int_least32_t
+unset ac_cv_type_int_fast32_t
+AC_CHECK_TYPE(int_least32_t,,,[#include <$ac_cv_header_stdint>])
+AC_CHECK_TYPE(int_fast32_t,,,[#include<$ac_cv_header_stdint>])
+
+if test "$ac_cv_header_stdint" != "stddef.h" ; then
+if test "$ac_cv_header_stdint" != "stdint.h" ; then
+AC_MSG_RESULT(..adding include stddef.h)
+   echo "#include <stddef.h>" >>$ac_stdint_h
+fi ; fi
+AC_MSG_RESULT(..adding include $ac_cv_header_stdint)
+   echo "#include <$ac_cv_header_stdint>" >>$ac_stdint_h
+echo "" >>$ac_stdint_h
+
+# ----------------- DONE header START basic int types -------------
+if test "$ac_cv_header_stdint_x" = "no-file" ; then
+   AC_MSG_RESULT(... need to look at C basic types)
+dnl ac_cv_header_stdint_test="yes" # moved up before creating the file
+else
+   AC_MSG_RESULT(... seen good stdint.h inttypes)
+dnl ac_cv_header_stdint_test="no"  # moved up before creating the file
+fi
+
+if test "$ac_cv_header_stdint_u" != "no-file" ; then
+   AC_MSG_RESULT(... seen bsd/sysv typedefs)
+   cat >>$ac_stdint_h <<EOF
+
+/* int8_t int16_t int32_t defined by inet code, redeclare the u_intXX types */
+typedef u_int8_t uint8_t;
+typedef u_int16_t uint16_t;
+typedef u_int32_t uint32_t;
+EOF
+    cat >>$ac_stdint_h <<EOF
+
+/* glibc compatibility */
+#ifndef __int8_t_defined
+#define __int8_t_defined
+#endif
+EOF
+fi
+
+ac_cv_sizeof_x="$ac_cv_sizeof_char:$ac_cv_sizeof_short"
+ac_cv_sizeof_X="$ac_cv_sizeof_x:$ac_cv_sizeof_int"
+ac_cv_sizeof_X="$ac_cv_sizeof_X:$ac_cv_sizeof_voidp:$ac_cv_sizeof_long"
+if test "$ac_cv_header_stdint" = "stddef.h" ; then
+#   we must guess all the basic types. Apart from byte-adressable system,
+# there a few 32-bit-only dsp-systems. nibble-addressable systems are way off.
+    cat >>$ac_stdint_h <<EOF
+/* ------------ BITSPECIFIC INTTYPES SECTION --------------- */
+EOF
+    t="typedefs for a"
+    case "$ac_cv_sizeof_X" in
+     1:2:2:2:4) AC_MSG_RESULT(..adding $t normal 16-bit system)
+                cat >>$ac_stdint_h <<EOF
+/*              a normal 16-bit system                       */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned long   uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          long    int32_t;
+#endif
+EOF
+;;
+     1:2:2:4:4) AC_MSG_RESULT(..adding $t 32-bit system derived from a 16-bit)
+                cat >>$ac_stdint_h <<EOF
+/*              a 32-bit system derived from a 16-bit        */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned int    uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          int     int32_t;
+#endif
+EOF
+;;
+     1:2:4:4:4) AC_MSG_RESULT(..adding $t normal 32-bit system)
+                cat >>$ac_stdint_h <<EOF
+/*              a normal 32-bit system                       */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned int    uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          int     int32_t;
+#endif
+EOF
+;;
+     1:2:4:4:8) AC_MSG_RESULT(..adding $t 32-bit system prepared for 64-bit)
+                cat >>$ac_stdint_h <<EOF
+
+/*              a 32-bit system prepared for 64-bit          */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned int    uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          int     int32_t;
+#endif
+EOF
+;;
+     1:2:4:8:8) AC_MSG_RESULT(..adding $t normal 64-bit system)
+                cat >>$ac_stdint_h <<EOF
+
+/*              a normal 64-bit system                       */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned int    uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          int     int32_t;
+#endif
+EOF
+;;
+     1:2:4:8:4) AC_MSG_RESULT(..adding $t 64-bit system derived from a 32-bit)
+                cat >>$ac_stdint_h <<EOF
+
+/*              a 64-bit system derived from a 32-bit system */
+typedef unsigned char   uint8_t;
+typedef unsigned short  uint16_t;
+typedef unsigned int    uint32_t;
+#ifndef __int8_t_defined
+#define __int8_t_defined
+typedef          char    int8_t;
+typedef          short   int16_t;
+typedef          int     int32_t;
+#endif
+EOF
+;;
+  *)
+    AC_MSG_ERROR([ $ac_cv_sizeof_X dnl
+ what is that a system? contact the author, quick! http://ac-archive.sf.net])
+    exit 1
+;;
+   esac
+fi
+
+# ------------- DONE basic int types START int64_t types ------------
+if test "$ac_cv_type_uint64_t" = "yes"
+then AC_MSG_RESULT(... seen good uint64_t)
+     cat >>$ac_stdint_h <<EOF
+
+/* system headers have good uint64_t */
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+#endif
+EOF
+
+elif test "$ac_cv_type_u_int64_t" = "yes"
+then AC_MSG_RESULT(..adding typedef u_int64_t uint64_t)
+     cat >>$ac_stdint_h <<EOF
+
+/* system headers have an u_int64_t */
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef u_int64_t uint64_t;
+#endif
+EOF
+else AC_MSG_RESULT(..adding generic uint64_t runtime checks)
+     cat >>$ac_stdint_h <<EOF
+
+/* -------------------- 64 BIT GENERIC SECTION -------------------- */
+/* here are some common heuristics using compiler runtime specifics */
+#if defined __STDC_VERSION__ && defined __STDC_VERSION__ > 199901L
+
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+#endif
+
+#elif !defined __STRICT_ANSI__
+#if defined _MSC_VER || defined __WATCOMC__ || defined __BORLANDC__
+
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#endif
+
+#elif defined __GNUC__ || defined __MWERKS__ || defined __ELF__
+dnl /* note: all ELF-systems seem to have loff-support which needs 64-bit */
+
+#if !defined _NO_LONGLONG
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+#endif
+#endif
+
+#elif defined __alpha || (defined __mips && defined _ABIN32)
+
+#if !defined _NO_LONGLONG
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long int64_t;
+typedef unsigned long uint64_t;
+#endif
+#endif
+  /* compiler/cpu type ... or just ISO C99 */
+#endif
+#endif
+EOF
+
+# plus a default 64-bit for systems that are likely to be 64-bit ready
+  case "$ac_cv_sizeof_x:$ac_cv_sizeof_voidp:$ac_cv_sizeof_long" in
+    1:2:8:8) AC_MSG_RESULT(..adding uint64_t default, normal 64-bit system)
+cat >>$ac_stdint_h <<EOF
+/* DEFAULT: */
+/* seen normal 64-bit system, CC has sizeof(long and void*) == 8 bytes */
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long int64_t;
+typedef unsigned long uint64_t;
+#endif
+EOF
+;;
+    1:2:4:8) AC_MSG_RESULT(..adding uint64_t default, typedef to long)
+cat >>$ac_stdint_h <<EOF
+/* DEFAULT: */
+/* seen 32-bit system prepared for 64-bit, CC has sizeof(long) == 8 bytes */
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long int64_t;
+typedef unsigned long uint64_t;
+#endif
+EOF
+;;
+    1:2:8:4) AC_MSG_RESULT(..adding uint64_t default, typedef long long)
+cat >>$ac_stdint_h <<EOF
+/* DEFAULT: */
+/* seen 64-bit derived from a 32-bit, CC has sizeof(long) == 4 bytes */
+#ifndef _HAVE_UINT64_T
+#define _HAVE_UINT64_T
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+#endif
+EOF
+;;
+   *)
+cat >>$ac_stdint_h <<EOF
+/* NOTE: */
+/* the configure-checks for the basic types did not make us believe */
+/* that we could add a fallback to a 'long long' typedef to int64_t */
+EOF
+  esac
+fi
+
+# ------------- DONE int64_t types START intptr types ------------
+if test "$ac_cv_header_stdint_x" = "no-file" ; then
+  cat >>$ac_stdint_h <<EOF
+
+/* -------------------------- INPTR SECTION --------------------------- */
+EOF
+  case "$ac_cv_sizeof_x:$ac_cv_sizeof_voidp" in
+  1:2:2)
+    a="int16_t" ; cat >>$ac_stdint_h <<EOF
+/* we tested sizeof(void*) to be of 2 chars, hence we declare it 16-bit */
+
+typedef uint16_t uintptr_t;
+typedef  int16_t  intptr_t;
+EOF
+;;
+  1:2:4)
+    a="int32_t" ; cat >>$ac_stdint_h <<EOF
+/* we tested sizeof(void*) to be of 4 chars, hence we declare it 32-bit */
+
+typedef uint32_t uintptr_t;
+typedef  int32_t  intptr_t;
+EOF
+;;
+  1:2:8)
+    a="int64_t" ; cat >>$ac_stdint_h <<EOF
+/* we tested sizeof(void*) to be of 8 chars, hence we declare it 64-bit */
+
+typedef uint64_t uintptr_t;
+typedef  int64_t  intptr_t;
+EOF
+;;
+  *)
+    a="long" ; cat >>$ac_stdint_h <<EOF
+/* we tested sizeof(void*) but got no guess, hence we declare it as if long */
+
+typedef unsigned long uintptr_t;
+typedef          long  intptr_t;
+EOF
+;;
+  esac
+AC_MSG_RESULT(..adding typedef $a intptr_t)
+fi
+
+# ------------- DONE intptr types START int_least types ------------
+if test "$ac_cv_type_int_least32_t" = "no"; then
+AC_MSG_RESULT(..adding generic int_least-types)
+     cat >>$ac_stdint_h <<EOF
+
+/* --------------GENERIC INT_LEAST ------------------ */
+
+typedef  int8_t    int_least8_t;
+typedef  int16_t   int_least16_t;
+typedef  int32_t   int_least32_t;
+#ifdef _HAVE_UINT64_T
+typedef  int64_t   int_least64_t;
+#endif
+
+typedef uint8_t   uint_least8_t;
+typedef uint16_t  uint_least16_t;
+typedef uint32_t  uint_least32_t;
+#ifdef _HAVE_UINT64_T
+typedef uint64_t  uint_least64_t;
+#endif
+EOF
+fi
+
+# ------------- DONE intptr types START int_least types ------------
+if test "$ac_cv_type_int_fast32_t" = "no"; then
+AC_MSG_RESULT(..adding generic int_fast-types)
+     cat >>$ac_stdint_h <<EOF
+
+/* --------------GENERIC INT_FAST ------------------ */
+
+typedef  int8_t    int_fast8_t;
+typedef  int32_t   int_fast16_t;
+typedef  int32_t   int_fast32_t;
+#ifdef _HAVE_UINT64_T
+typedef  int64_t   int_fast64_t;
+#endif
+
+typedef uint8_t   uint_fast8_t;
+typedef uint32_t  uint_fast16_t;
+typedef uint32_t  uint_fast32_t;
+#ifdef _HAVE_UINT64_T
+typedef uint64_t  uint_fast64_t;
+#endif
+EOF
+fi
+
+if test "$ac_cv_header_stdint_x" = "no-file" ; then
+     cat >>$ac_stdint_h <<EOF
+
+#ifdef _HAVE_UINT64_T
+typedef int64_t        intmax_t;
+typedef uint64_t      uintmax_t;
+#else
+typedef long int       intmax_t;
+typedef unsigned long uintmax_t;
+#endif
+EOF
+fi
+
+AC_MSG_RESULT(... DONE $ac_stdint_h)
+   cat >>$ac_stdint_h <<EOF
+
+  /* once */
+#endif
+#endif
+EOF
+])
+
+AC_CREATE_STDINT_H(src/libspf/_stdint.h)
+
+dnl quote from SunOS-5.8 sys/inttypes.h:
+dnl Use at your own risk.  As of February 1996, the committee is squarely
+dnl behind the fixed sized types; the "least" and "fast" types are still being
+dnl discussed.  The probability that the "fast" types may be removed before
+dnl the standard is finalized is high enough that they are not currently
+dnl implemented.
+
+#AC_CHECK_TYPE(u_int8_t, [uint="u_int8_t"
+#  AC_DEFINE(HAVE_U_INT8_T,1,[Define to 1 if type `u_int8_t' is defined])],
+#  AC_CHECK_TYPE(uint8_t, [uint="uint8_t"
+#    AC_DEFINE(HAVE_UINT8_T,1,[Define to 1 if type `uint8_t' is defined])],
+#    [uint="unsigned char"]))
+#AC_SUBST(U_INT8_T,[$uint])
+
+#AC_CHECK_TYPE(u_int16_t, [uint="u_int16_t"
+#  AC_DEFINE(HAVE_U_INT16_T,1,[Define to 1 if type `u_int16_t' is defined])],
+#  AC_CHECK_TYPE(uint16_t, [uint="uint16_t"
+#    AC_DEFINE(HAVE_UINT16_T,1,[Define to 1 if type `uint16_t' is defined])],
+#    [uint="unsigned short"]))
+#AC_SUBST(U_INT16_T,[$uint])
+
+#AC_CHECK_TYPE(u_int32_t, [uint="u_int32_t"
+#  AC_DEFINE(HAVE_U_INT32_T,1,[Define to 1 if type `u_int32_t' is defined])],
+#  AC_CHECK_TYPE(uint32_t, [uint="uint32_t"
+#    AC_DEFINE(HAVE_UINT32_T,1,[Define to 1 if type `uint32_t' is defined])],
+#    [uint="unsigned int"]))
+#AC_SUBST(U_INT32_T,[$uint])
+
+#AC_CHECK_TYPE(uintptr_t, [uint="uintptr_t"
+#  AC_DEFINE(HAVE_UINTPTR_T,1,[Define to 1 if type `uintptr_t' is defined])])
+#AC_SUBST(UINTPTR_T,[$uint])
+
+
+#-------------------------------------------------------------------------------
+# __FUNCTION__
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING([__FUNCTION__])
+func=none
+AC_COMPILE_IFELSE(
+  [int x() { f(__FUNCTION__); }],
+  AC_MSG_RESULT([__FUNCTION__])
+  AC_DEFINE(HAVE___FUNCTION__, [], ["Define to 1 if __FUNCTION__ is defined"]),
+  AC_COMPILE_IFELSE(
+    [int x() { f(__func__); }],
+    AC_MSG_RESULT([__func__])
+    AC_DEFINE(HAVE___FUNC__, [], ["Define to 1 if __func__ is defined"])))
+
+
+#-------------------------------------------------------------------------------
+# Setup build directories
+#-------------------------------------------------------------------------------
+
+LIBSPF_BUILD_DIRS="libspf spfqtool"
+
+
+#-------------------------------------------------------------------------------
+# Warn people configuring as root....
+#-------------------------------------------------------------------------------
+
+idcommand="id -u"
+if test `$idcommand` == "0"
+then
+  AC_MSG_WARN(=== DO NOT EVER CONFIGURE AS ROOT  ===)
+  AC_MSG_WARN(=== UNLESS EXPLICITLY EXPRESSED BY ===)
+  AC_MSG_WARN(=== SUPPLIED DOCUMENTATION FROM A  ===)
+  AC_MSG_WARN(=== REPUTABLE AUTHOR! Baka!        ===)
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we want to link libbind
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING(whether to link libbind is eanbled)
+AC_ARG_ENABLE(libbind,
+[  --enable-libbind          Link libbind instead of libresolv (default=no)],
+[case "${enableval}" in
+  yes)
+    libbind=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    libbind=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-libbind)
+    ;;
+esac],
+[libbind=false
+AC_MSG_RESULT(no)])
+
+if test "$libbind" = "true"; then
+  LIBSPF_RESOLV_LIB="-lbind"
+fi
+
+if test "$libresolv" = "false"; then
+  LIBSPF_RESOLV_LIB=""
+else
+
+  #----------------------------------------------------------------------------
+  # Check to see if we want to link libresolv (default is yes) 
+  #------------------------------------------------------------------
+
+  dnl res_query has been seen in libc, libbind and libresolv
+  AC_CHECK_FUNCS(res_query, res_search)
+
+  if test "x-$ac_cv_func_res_query" = "x-yes" ; then
+    have_res_query=yes
+  fi
+
+  if test "x-$ac_cv_func_res_search" = "x-yes" ; then
+    have_res_search=yes
+  fi
+
+  if test "x-$have_res_query" = "x-no" || test "x-$have_res_search" = "no" ; then
+    AC_CHECK_LIB(resolv, res_query)
+    if test "x-$ac_cv_lib_resolv_res_query" = "x-yes" ; then
+        have_res_query=yes
+    else
+      AC_CHECK_LIB(bind, res_query)
+      if test "x-$ac_cv_lib_bind_res_query" = "x-yes" ; then
+        have_res_query=yes
+      else
+        dnl some glibcs have res_query as a macro, so work around it
+        AC_MSG_CHECKING([for res_query in -lresolv (alternate version)])
+        save_libs="$LIBS"
+        libresolv=true
+        LIBS="-lresolv $LIBS"
+        LIBSPF_RESOLV_LIB="-lresolv"
+          AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <resolv.h>]],
+          [[res_query(0,0,0,0,0)]])],
+            [AC_MSG_RESULT(yes)
+            have_res_query=yes],
+          [AC_MSG_RESULT(no)
+          libresolv=false
+          LIBS="$save_libs"])
+      fi
+    fi
+  fi
+
+  if test "x-$have_res_query" = "x-yes" ; then
+    AC_DEFINE(HAVE_RES_QUERY)
+    libresolv=true
+  dnl no res_query, do windows compat checks
+  else
+    dnl !!! implement these checks
+    AC_MSG_WARN([required function res_query not found])
+    libresolv=false
+  fi
+
+fi
+
+# Checks for libraries.
+AC_CHECK_LIB([resolv], [res_search])
+AC_SUBST(LIBSPF_RESOLV_LIB)
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we want to enable debugging
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING(whether DEBUG is eanbled)
+AC_ARG_ENABLE(debug,
+[  --enable-debug            Enables debug option (default=no)],
+[case "${enableval}" in
+  yes)
+    debug=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    debug=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-debug)
+    ;;
+esac],
+[debug=false
+AC_MSG_RESULT(no)])
+
+CFLAGS=""
+if test "$debug" = "true"; then
+  CFLAGS="-ggdb -O -D_SPF_DEBUG"
+else
+  AC_MSG_RESULT(Enabling GCC optimisations)
+  CFLAGS="$CFLAGS -O3 -ffast-math -fomit-frame-pointer"
+
+  if [[ "x$GCC_VERSION" = "x3" ]]; then
+    AC_MSG_RESULT(Enabling GCC v3 optimizations)
+    CFLAGS="$CFLAGS -minline-all-stringops -fno-math-errno"
+  fi
+fi
+
+case "${host_cpu}" in
+	i?86) 
+		AC_MSG_RESULT([CPU: ${host_cpu}; Enabling pentium optimisations])
+		# cannot do malign-double as we link to other libraries and it
+		# would break binary compatibility
+		CFLAGS="$CFLAGS ${gcc_special_cflags}"
+	  ;;
+	*) 
+		AC_MSG_RESULT(Please e-mail author optimizations for this cpu)
+		;;
+esac
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we want to enable debugging output to logfile
+#-------------------------------------------------------------------------------
+
+if test "$debug" = "true"; then
+  AC_MSG_CHECKING(whether you want debug output to a logfile)
+  AC_ARG_ENABLE(debug_logfile,
+  [  --enable-debug-logfile    Enables logging debug output (default=yes)],
+  [case "${enableval}" in
+    yes)
+      debug_logfile=true
+      AC_MSG_RESULT(yes)
+      ;;
+    no)
+      debug_logfile=false
+      AC_MSG_RESULT(no)
+      ;;
+    *)
+      AC_MSG_ERROR(bad value ${enableval} for --enable-debug-logfile)
+      ;;
+  esac],
+  [debug_logfile=true
+  AC_MSG_RESULT(no)])
+
+  if test "$debug_logfile" = "true"; then
+    CFLAGS="-D_SPF_DEBUG_LOGFILE $CFLAGS"
+  fi
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we want to enable logfile statistics
+#-------------------------------------------------------------------------------
+
+logfile_stats=false
+AC_MSG_CHECKING(whether you want logfile statistics)
+AC_ARG_ENABLE(logfile_stats,
+[  --enable-logfile-stats    Enables logfile stats (default=no)],
+[case "${enableval}" in
+  yes)
+    logfile_stats=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    logfile_stats=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-logfile-stats)
+    ;;
+esac],
+[logfile_stats=false
+AC_MSG_RESULT(no)])
+
+if test "$logfile_stats" = "true"; then
+  CFLAGS="-D_SPF_LOGFILE_STATS $CFLAGS"
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check whether to enable a memset after each malloc 
+#-------------------------------------------------------------------------------
+
+rfc_recursion=false
+AC_MSG_CHECKING(whether to abide by the RFC as regards recursiveness)
+AC_ARG_ENABLE(rfc_recursion,
+[  --enable-rfc-recursion    Change SPF recursion to 20 (as per RFC) (default=no)],
+[case "${enableval}" in
+  yes)
+    rfc_recursion=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    rfc_recursion=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-rfc-recursion)
+    ;;
+esac],
+[rfc_recursion=false
+AC_MSG_RESULT(no)])
+
+if test "$rfc_recursion" = "true"; then
+  CFLAGS="-D_RFC_RECURSION $CFLAGS"
+  AC_MSG_WARN(=== THE INTERNET IS FULL OF ILLITERATE AND LAZY PEOPLE ===)
+  sleep 1
+  AC_MSG_WARN(=== MANY OF WHOM CAN NOT PUBLISH A VALID SPF RECORD TO ===)
+  sleep 1
+  AC_MSG_WARN(=== SAVE THEIR LIFE.  MANY OF SUCH INDIVIDUALS OFTEN   ===)
+  sleep 1
+  AC_MSG_WARN(=== LINK RECORDS TOGETHER FORMING A RECURSIVE PARSING  ===)
+  sleep 1
+  AC_MSG_WARN(=== LOOP.  YOU HAVE BEEN WARNED. THE RFC STATES THAT   ===)
+  sleep 1
+  AC_MSG_WARN(=== SPF PARSERS MUST SUPPORT AT LEAST TWENTY LEVELS OF ===)
+  sleep 1
+  AC_MSG_WARN(=== RECURSION.  THIS HAS PROVEN TO BE POINTLESS GIVEN  ===)
+  sleep 1
+  AC_MSG_WARN(=== GIVEN THE ABUNDANCE OF STUPIDITY PREVALENT ON THE  ===)
+  sleep 1
+  AC_MSG_WARN(=== INTERNET.  YOU HAVE BEEN WARNED!!                  ===)
+  sleep 5 
+fi
+  
+
+#-------------------------------------------------------------------------------
+# Check whether to enable a memset after each malloc 
+#-------------------------------------------------------------------------------
+
+paranoid_malloc=true
+AC_MSG_CHECKING(whether to memset after every malloc (paranoid malloc)?)
+AC_ARG_ENABLE(paranoid_malloc,
+[  --enable-paranoid-malloc  Enables a memset of every malloc to NULL (default=yes)],
+[case "${enableval}" in
+  yes)
+    paranoid_malloc=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    paranoid_malloc=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-paranoid-malloc)
+    ;;
+esac],
+[paranoid_malloc=true
+AC_MSG_RESULT(yes)])
+
+if test "$paranoid_malloc" = "true"; then
+  CFLAGS="-D_WITH_PARANOID_MALLOC $CFLAGS"
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check whether to enable res_search behaviour instead of RFC821/2821 required
+# res_query behaviour.  See Debian bug tracking list thread:
+# http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=297060 for more information.
+#-------------------------------------------------------------------------------
+
+res_search=false
+AC_MSG_CHECKING(whether to use res_search instead of res_query?)
+AC_ARG_ENABLE(res_search,
+[  --enable-res_search       Enables DNS queries to follow default and search rules (default=no)],
+[case "${enableval}" in
+  yes)
+    res_search=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    res_search=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-res_search)
+    ;;
+esac],
+[res_search=false
+AC_MSG_RESULT(no)])
+
+if test "$res_search" = "true"; then 
+  CFLAGS="-D_WITH_RES_SEARCH $CFLAGS"
+fi
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we should build libSPF Query Tool
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING(whether to disable build the libSPF Query Tool?)
+AC_ARG_ENABLE(spfqtool,
+[  --disable-spfqtool        Disables compilation of the libSPF Query Tool (default=no)],
+[case "${enableval}" in
+  yes)
+    spfqtool=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    spfqtool=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --disable-spfqtool)
+    ;;
+esac],
+[spfqtool=false
+AC_MSG_RESULT(no)])
+
+if test "$spfqtool" = "true"; then
+  LIBSPF_BUILD_DIRS="libspf"
+fi
+#AC_SUBST(LIBSPF_BUILD_DIRS)
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we want to enable pthreads (gethostbyname_r)
+# For now, --enable-pthreads just happens to activate our internal
+# _DNS_gethostbyname_r reentrant wrapper to gethostbyname unless
+# gethostbyname_r is available (GNU extention) then the wrapper will
+# be around that instead and won't use the mutex
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING(whether to compile with reentrant capabilities)
+AC_ARG_ENABLE(pthreads,
+[  --enable-pthreads         Enables reentrant (thread-safe) library (default=no)],
+[case "${enableval}" in
+  yes)
+    pthreads=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    pthreads=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-pthreads)
+    ;;
+esac],
+[pthreads=false
+AC_MSG_RESULT(no)])
+
+if test "$pthreads" = "true"; then
+
+  AC_CHECK_HEADERS(pthread.h)
+  if test "x-$ac_cv_header_pthread_h" = "x-yes"; then
+    AC_DEFINE(HAVE_PTHREAD_H)
+    CFLAGS="-D_WITH_PTHREADS -D_REENTRANT $CFLAGS"
+
+    case "$host" in
+      *-*-freebsd*)
+        AC_MSG_WARN([Hey we are FreeBSD we can be all HOMO and DIFFERENT!])
+        LIBSPF_PTHREADS_LIB="-pthread"
+        ;;
+      *)
+        LIBSPF_PTHREADS_LIB="-lpthread" 
+        ;;
+    esac
+  fi
+
+  AC_CHECK_FUNCS(gethostbyname_r)
+  if test "x-$ac_cv_func_gethostbyname_r" = "x-yes"; then
+    AC_DEFINE(HAVE_GETHOSTBYNAME_R)
+  else
+    AC_MSG_WARN([GNU gethostbyname_r not found, using internal wrapper])
+  fi
+  
+else
+
+  LIBSPF_PTHREADS_LIB="" 
+  pthreads=false
+  
+fi
+AC_SUBST(LIBSPF_PTHREADS_LIB)
+
+
+#-------------------------------------------------------------------------------
+# Check to see if we should build Sendmail SPF milter and perform the pthreads
+# check again and in the event it wasn't specified (its required) or it failed,
+# we will catch it (and enable it if successful) here.
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING(whether to build the Sendmail SPF milter?)
+AC_ARG_ENABLE(spfmilter,
+[  --enable-spfmilter        Enables compilation of the Sendmail SPF milter (default=no)],
+[case "${enableval}" in
+  yes)
+    spfmilter=true
+    AC_MSG_RESULT(yes)
+    ;;
+  no)
+    spfmilter=false
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_ERROR(bad value ${enableval} for --enable-spfmilter)
+    ;;
+esac],
+[spfmilter=false
+AC_MSG_RESULT(no)])
+
+if test "$pthreads" = "false"; then
+  if test "$spfmilter" = "true"; then
+    AC_MSG_ERROR([pthreads is required, please re-configure with --enable-pthreads])
+  fi
+fi
+  
+if test "$spfmilter" = "true"; then
+  LIBSPF_BUILD_DIRS="$LIBSPF_BUILD_DIRS spfmilter"
+  echo "--------------------------------------------------------------------------------"
+  sleep 1
+  echo "                       spfmilter - SPF mail filter module"
+  echo ""
+  echo "                   Originally by Jef Poskanzer <jef@acme.com>"
+  echo ""
+  echo " Sendmail includes a facility for plugging in custom mail filters,"
+  echo " called milters.  It's documented here: http://www.milter.org/milter_api/"
+  echo ""
+  echo " See the manual entry (man spfmilter) or the README for more details."
+  echo ""
+  echo " Jef Poskanzer is the original author of this spfmilter."
+  echo ""
+  echo " This version and future versions of this spfmilter as bundled within libSPF"
+  echo " will be supported by the libSPF development team."
+  echo ""
+  echo " DO NOT REPORT PROBLEMS WITH THIS SPFMILTER TO JEF AS IT IS NOT FAIR TO ASK"
+  echo " HIM TO SUPPORT MULTIPLE VERSIONS OF HIS MILTER AFTER WE HAVE MODIFIED IT"
+  echo ""
+  echo " Send bugs to: James Couzens <jcouzens@codeshare.ca>"
+  echo ""
+  echo "--------------------------------------------------------------------------------"
+  sleep 3 
+  echo ""
+
+
+#-------------------------------------------------------------------------------
+# getpwuid (pwd.h)
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING([getpwuid])
+use_getpwuid=no
+AC_CHECK_FUNC(getpwuid,use_getpwuid=yes,[AC_CHECK_FUNC(getpwuid)])
+  if test "x$use_getpwuid" = "xyes"; then
+    AC_DEFINE([HAVE_PWD_H], [], [Have pwd.h])
+  else
+    AC_MSG_ERROR(Can not continue without pwd.h do you really have it?)
+  fi
+
+
+#-------------------------------------------------------------------------------
+# setgroups (grp.h) 
+#-------------------------------------------------------------------------------
+
+AC_MSG_CHECKING([setgroups])
+use_setgroups=no
+AC_CHECK_FUNC(setgroups,use_setgroups=yes,[AC_CHECK_FUNC(setgroups)])
+  if test "x$use_setgroups" = "xyes"; then
+    AC_DEFINE([HAVE_GRP_H], [], [Have pwd.h])
+  else
+    AC_MSG_ERROR(Can not continue without grp.h do you really have it?)
+  fi
+fi
+AC_SUBST(LIBSPF_BUILD_DIRS)
+
+
+#-------------------------------------------------------------------------------
+# Enable compiler full-optimizations which lead to greater performance
+#-------------------------------------------------------------------------------
+
+if test "$debug" = "false"; then
+
+  AC_MSG_CHECKING(whether I should enable full optimizations)
+  AC_ARG_ENABLE(full_optimizations,
+  [  --enable-full-optimizations  Enables building of an optimized library (default=no)],
+  [case "${enableval}" in
+    yes) 
+      full_optimizations=true
+      AC_MSG_RESULT(yes)
+      ;;
+    no)
+      full_optimizations=false
+      AC_MSG_RESULT(no)
+      ;;
+    *)
+      AC_MSG_ERROR(bad value ${enableval} for --enable-full-optimizations)
+      ;;
+  esac],
+  [full_optimizations=false
+  AC_MSG_RESULT(no)])
+
+  if test "$full_optimizations" = "true"; then
+    if [[ "x$GCCVER" != "xno" ]]; then
+      AC_MSG_RESULT(yes, however this option is deprecated!)
+      #CFLAGS="$CFLAGS -O2 -pipe -funroll-loops -ffast-math -ftracer -fweb"
+      #CFLAGS="$CFLAGS -O3 -ffast-math -fomit-frame-pointer"
+    fi
+  fi
+fi
+
+
+#-------------------------------------------------------------------------------
+# Generate Makefiles 
+#-------------------------------------------------------------------------------
+
+AC_OUTPUT( \
+  Makefile \
+  src/Makefile \
+  src/libspf/Makefile \
+  src/spfqtool/Makefile \
+  src/libspf/spf.h \
+  src/libspf/util.c \
+  dnl src/spfmilter/Makefile \
+)
+#AC_OUTPUT(src/Makefile)
+#AC_OUTPUT(src/libspf/Makefile)
+#AC_OUTPUT(src/spfqtool/Makefile)
+#AC_OUTPUT(src/libspf/spf.h)
+#AC_OUTPUT(src/libspf/util.c)
+#AC_OUTPUT(src/spfmilter/Makefile)
+
+echo ""
+echo ""
+echo "           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo         "
+echo "           \`888   \`\"'  \"888       d8P'    \`Y8 \`888   \`Y88. \`888'     \`8         "
+echo "            888  oooo   888oooo.  Y88bo.       888   .d88'  888                 "
+echo "            888  \`888   d88' \`88b  \`\"Y8888o.   888ooo88P'   888oooo8            "
+echo "            888   888   888   888      \`\"Y88b  888          888   \"            "
+echo "            888   888   888   888 oo     .d8P  888          888                 "
+echo "           o888o o888o  \`Y8bod8P' 8\"\"88888P'  o888o        o888o                "
+echo "--------------------------------------------------------------------------------"
+echo "                              $PACKAGE $VERSION                                 "
+echo "            An ANSI C Implementation of the Sender Policy Framework             "
+echo "--------------------------------------------------------------------------------"
+echo ""
+echo " ./CHANGELOG ............ List of documented changed between versions"
+echo " ./docs ................. Excellent API and integration Documentation"
+echo " ./examples ............. Examples of how to implement"
+echo " ./FAQ .................. Frequently Asked Questions (and Answers :-) )"
+echo " ./LICENSE .............. Terms under which libSPF is licensed"
+echo " ./README ............... A Quick and Excellent rundown of basic information"
+echo " ./TODO ................. Things planned for future releases that are 'To Do'"
+echo " ./VERSION .............. Version of thie release"
+echo " ./bin .................. Static & Dyn. versions of the libSPF Query Tool"
+echo " ./libspf.kateproject ... KDE's excellent IDE 'kate' Project File"
+echo " ./patches .............. MTA Patches"
+echo " ./src .................. Its not the Swartz, but it will have to do ;)"
+echo ""
+echo "--------------------------------------------------------------------------------"
+sleep 2 
+echo ""
+echo " There are complete HOWTOs (or walkthru) documents within the 'Docs' dir for"
+echo " the MTA's this library supports."
+echo ""
+echo " Commercial developers looking to integrate libSPF, there is no cost!  If you"
+echo " require assistance (free) please contact <developers@codeshare.ca>"
+echo ""
+echo " Website ................................ http://libSPF.org"
+echo " Forums ................................. http://forums.6o4.ca"
+echo " Contact ................................ jcouzens@codeshare.ca"
+echo ""
+echo "--------------------------------------------------------------------------------"
+sleep 1 
+echo ""
+
+
+if test "$debug" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable Debugging ........................................... "$tmp""
+
+
+if test "$debug_logfile" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable Debugging output to logfile (/var/log/spf.log) ...... "$tmp""
+
+
+if test "$logfile_stats" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable SPF logging statistics to /var/log/spflog.txt ....... "$tmp""
+
+
+if test "$full_optimizations" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable compilation of an optimized library ................. "$tmp""
+
+
+if test "$rfc_recursion" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable RFC recursion during SPF checks ..................... "$tmp""
+
+
+if test "$res_search" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable DNS queries to follow 'default' and 'search' rules .. "$tmp""
+
+
+if test "$paranoid_malloc" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable memset to NULL after each malloc .................... "$tmp""
+
+
+if test "$spfqtool" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Disable build of SPF Query Tool ............................ "$tmp""
+
+
+if test "$libresolv" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable use of libresolv resolver ........................... "$tmp""
+
+
+if test "$spfmilter" = "true"; then
+  tmp="ON"
+else 
+  tmp="OFF"
+fi
+echo " Enable use of Sendmail spfmilter ........................... "$tmp""
+
+
+if test "$libbind" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable use of libbind resolver ............................. "$tmp""
+
+
+if test "$pthreads" = "true"; then
+  tmp="ON"
+else
+  tmp="OFF"
+fi
+echo " Enable use of pthreads (gethostbyname_r) ................... "$tmp""
+
+
+echo ""
+echo " libSPF Query tool binaries are in the new 'bin' dir in the libSPF root"
+echo " libSPF Milter binaries are in the new 'bin; dir also"
+echo ""
+echo " libSPF libraries are in the new 'lib' dir in the libSPF root"
+echo ""
+echo " libSPF Milter rc scripts and docs are in 'src/spfmilter/rc_scripts'"
+echo "--------------------------------------------------------------------------------"
+echo ""
+
+# end of configure.in

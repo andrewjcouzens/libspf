@@ -1,0 +1,85 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+Q. What is up with libspf2?
+A. If I had a penny for every email received with this question I'd be 
+   filthy stinking rich.  Instead, i'm filthy stinking disgusted with the
+   absolute arrogance displayed by Wayne Schlitt and "Shevek" aka Ben
+   Mankin.  Wayne through his own arrogance believes that his library
+   (originally entitled libspf-alt) is vastly superior to that of this 
+   library that he deemed it appropriate to rename his library libspf2
+   which causes a variety of problems.
+
+   1. Its confusing!  Which library shall people use!?
+      Wayne hopes that people will do the natual thing and assume that 
+      by the very nature of it having a higher number (2) then that of
+      libSPF they will use it.  Their own website references libSPF
+      as 'An Old implementation."
+
+   2. It appears to supercede or deprecate this library which is MORE
+      MATURE and STABLE then libspf-alt/libspf2!
+
+   3. Its inconsiderate and WRONG.  If you have a peek at the libs
+      available with any *nix you will see that libraries with the name
+      library2 eg: libxml2 are penned by the SAME author(s) and they do
+      indeed generally deprecate the previous library.  Persons labeling
+      their project as such without the consent of the original author
+      are assholes.
+
+   4. September 2, 2004 - Another good reason, this will be the third
+      rewrite of an SPF implementation of Wayne origin.
+
+      http://www.gossamer-threads.com/lists/spf/devel/11120
+
+      In summary the entire library has been effectively rewritten once
+      again.  Amusingly enough its merely now attempting to do just
+      what this library has been doing from day one.  
+
+   This is nasty disgusting political topic which I have tried to resolve
+   but have had no success.
+
+   More information about this can be found at http://moscow.6o4.ca/
+
+Q. Where are the patches against the MTAs?
+A. See the patches directory.
+
+Q. I/We/My company wants to pay you to help/integrate libspf/libsrs into our
+   MTA.  Are you available?
+A. Money is always great.  Email jcouzens@codeshare.ca.
+
+Q. I want to help, where do I apply?
+A. E-Mail jcouzens@codeshare.ca.  The most needed help is patches for MTA's.
+
+Q. I have a patch against MTA X, what do I do?
+A. Email jcouzens@codeshare.ca and arrange to communicate.
+
+Q. I see debug code all over the place, but I can't get it working:
+A. libspf-1_0_0/docs/API/debugging_libspf.pdf 
+
+Q. make test fails for me
+A. Its hard coded to use /usr/bin/perl where most if not all BSD and Linux
+   implementations place the perl binary.  The easiest way around this is
+   to symlink wherever you may have perl installed to this location.  An example
+   of this would be: ln -s /usr/local/bin/perl /usr/bin/perl
+
+Q. I have some random question not answered here.
+A. Eamil jcouzens@codeshare.ca.
+
+Q. Great work, I want to show my appreciation, how can I?
+A. I love books.  Perhaps you could purchase something from my Amazon.com wishlist!
+   If you do, please notify me so I can remove an item, no need getting two of
+   anything :-)
+
+   http://libspf.org/wishlist.html
+
+EOF

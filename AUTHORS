@@ -1,0 +1,75 @@
+
+           oooo   o8o   .o8        .oooooo..o ooooooooo.   oooooooooooo
+           `888   `"'  "888       d8P'    `Y8 `888   `Y88. `888'     `8
+            888  oooo   888oooo.  Y88bo.       888   .d88'  888
+            888  `888   d88' `88b  `"Y8888o.   888ooo88P'   888oooo8
+            888   888   888   888      `"Y88b  888          888    "
+            888   888   888   888 oo     .d8P  888          888
+           o888o o888o  `Y8bod8P' 8""88888P'  o888o        o888o
+
+--------------------------------------------------------------------------------
+            An ANSI C Implementation of the Sender Policy Framework
+--------------------------------------------------------------------------------
+
+ Thanks to lots of people for success and failure reports, code, ideas,
+ and documentation. See CHANGELOG for insight into specific contributions
+ by those listed below.
+
+ Active developers:
+ ------------------
+
+ James Couzens .......... <jcouzens@codeshare.ca>
+
+ Inactive developers:
+ --------------------
+
+ Patrick Earl ........... <patearl@patearl.net>
+ Sean Comeau ............ <scomeau@obscurity.org>
+ Michael Weiner ......... <mweiner@codeshare.ca>
+ Teddy .................. <teddy@codeshare.ca>
+ Travis Anderson ........ <tanderson@codeshare.ca>
+
+ Contributors (in one way or another):
+ -------------------------------------
+
+ Albert Weichselbraun ... <albert@atnet.at>
+ Angel Fraguela ......... <afraguela@euronippon.es>
+ Daniel Roethlisberger .. <daniel@roe.ch>
+ Dayle Riddoch .......... <spf@riddoch.ca>
+ Jan Holmberg ........... <jan@artech.se>
+ Jason Richey ........... <jasonr@bomis.com>
+ Jeff A. Earickson ...... <jaearick@colby.edu>
+ John Ogness ............ <jogness@antivir.de>
+ Jon Sturgeon ........... <JonS@futuresoft.com>
+ Markus Friedrich ....... <markus.friedrich@siemens.com>
+ Matthias Ruttmann ...... <ruttmann@bartels.de>
+ Michael Elliott ........ <elliott@rod.msen.com>
+ Michael McLagan ........ <mmclagan@invlogic.com>
+ Nico Kadel-Garcia ...... <nkadel@merl.com>
+ Oliver Stöneberg ....... <oliverst@online.de>
+ Paul Howarth ........... <paul@city-fan.org>
+ Pawel Foremski ......... <pjf@gna.org>
+ Per Steinar Iversen .... <PerSteinar.Iversen@adm.hio.no>
+ Rob McMahon ............ <Rob.McMahon@warwick.ac.uk>
+ Rod Begbie ............. <rod@arsecandle.org>
+ Roger Moser ............ <Roger.Moser@pamho.net>
+ Stephen Misel .......... <steve@neonova.net>
+ Stuart Weatherby ....... <stu@codeshare.ca>
+ Troy D. Straszheim ..... <troy@resophonic.co>
+ 
+ I'd like to also thank Meng Weng Wong for believing in me, helping me out
+ along the way, for being quick with the wit, and for his vision, patience
+ and diligence that he has applied throughout my stay with this project.
+
+ Although I will have nothing to do with SenderID and I am at odds as to
+ just how much control Meng has had over the situation I look forward to a
+ time in the near future where perhaps we can all get back to focusing on
+ the real issues instead of this political bullshit that is MARID.
+
+ I hate raising one contributor above another probably just as much as many
+ others do but I would like to make note of Roger Moser's gracious efforts
+ towards bug finding, your time has been well appreciated!
+ 
+ If I missed your name drop me an E-Mail and I'll see that you get added.
+
+--------------------------------------------------------------------------------

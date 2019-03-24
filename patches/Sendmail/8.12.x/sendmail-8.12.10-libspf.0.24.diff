@@ -1,0 +1,1449 @@
+*** sendmail/srvrsmtp.c	Tue Jul  1 10:30:01 2003
+--- sendmail.spf/srvrsmtp.c	Sun Feb  8 04:58:45 2004
+*************** extern void	tls_set_verify __P((SSL_CTX 
+*** 38,45 ****
+--- 38,50 ----
+  # define TLS_VERIFY_CLIENT() tls_set_verify(srv_ctx, srv_ssl, \
+  				bitset(SRV_VRFY_CLT, features))
+  #endif /* STARTTLS */
+  
++ #ifdef LIBSPF
++ #include <spf.h>
++ #endif /* LIBSPF */
++ 
+  /* server features */
+  #define SRV_NONE	0x0000	/* none... */
+  #define SRV_OFFER_TLS	0x0001	/* offer STARTTLS */
+  #define SRV_VRFY_CLT	0x0002	/* request a cert */
+*************** static void	smtp_data __P((SMTP_T *, ENV
+*** 373,380 ****
+--- 378,427 ----
+  		sm_setproctitle(true, e, "%s %s: %.80s",	\
+  				qid_printname(e), CurSmtpClient, inp);	\
+  	}
+  
++ #ifdef LIBSPF
++ 
++ #define SPF_FAILED  "554 transaction failed (SPF)\r\n"
++ #define SPF_SYNTAX  "555 syntax error (#5.5.4)\r\n"
++ 
++ #define SPF_DIE_NOIP()                                  \
++   message("421 unable to store remote ip (SPF)\r\n");   \
++   disconnect(1, e);
++ 
++ #define SPF_DIE_NOPEER()                                \
++   message("421 invalid peer structure (SPF)\r\n");      \
++   disconnect(1, e);
++ 
++ #define SPF_DIE_NOMEM()                                 \
++   message("421 out of memory (#4.3.0)\r\n");            \
++   disconnect(1, e);
++      
++ peer_info_t   *peer_info    = NULL; /* peer_info structure */
++ 
++ void spf_out(SPF_RESULT SPF_RES, char *exp, char *r, register ENVELOPE *volatile e)
++ {
++   if (SPFExplainState == true) { message("%s", exp); free(exp); }
++   message("%s\r\n", r);
++   free(r);
++ 
++   if (SPFTarpit > 0)
++   {
++     switch (SPF_RES)
++     {
++       case SPF_PASS:    return;
++       case SPF_H_FAIL:  if (SPFAction > 1) { sleep(SPFTarpitTime); disconnect(1, e); }
++       case SPF_S_FAIL:  if (SPFAction > 2) { sleep(SPFTarpitTime); disconnect(1, e); }
++       case SPF_NEUTRAL: if (SPFAction > 3) { sleep(SPFTarpitTime); disconnect(1, e); }
++       case SPF_NONE:    if (SPFAction > 4) { sleep(SPFTarpitTime); disconnect(1, e); }
++       case SPF_ERROR:   if (SPFAction > 5) { sleep(SPFTarpitTime); disconnect(1, e); }
++       case SPF_UNKNOWN: if (SPFAction > 6) { sleep(SPFTarpitTime); disconnect(1, e); }
++     }
++   }
++ 
++   return;
++ }
++ #endif /* LIBSPF */
+  
+  void
+  smtp(nullserver, d_flags, e)
+  	char *volatile nullserver;
+*************** smtp(nullserver, d_flags, e)
+*** 812,819 ****
+--- 861,883 ----
+  
+  # endif /* _FFR_SMTP_SSL */
+  #endif /* STARTTLS */
+  
++ #ifdef LIBSPF
++   if (SPFAction > 0)
++   {
++     if ((peer_info = SPF_init(MyHostName, anynet_ntoa(&RealHostAddr), 
++       SPFExplain, SPFTrustedForwarder, SPFBestGuess,
++       SPFTrustedForwarderState, SPFBestGuessState)) == NULL)
++     {
++       sm_syslog(LOG_INFO, e->e_id,
++         "SPF_init FAILED with args: (%s) (%s)", 
++         CurSmtpClient, MyHostName);
++       disconnect(1, e); 
++     }
++   }
++ #endif /* LIBSPF */
++ 
+  	/* output the first line, inserting "ESMTP" as second word */
+  	if (*greetcode == '5')
+  		(void) sm_snprintf(inp, sizeof inp, "%s not accepting messages",
+  				   hostname);
+*************** tlsfail:
+*** 1813,1821 ****
+  			{
+  				protocol = "SMTP";
+  				SmtpPhase = "server HELO";
+  			}
+! 
+  			/* avoid denial-of-service */
+  			(void) checksmtpattack(&n_helo, MAXHELOCOMMANDS, true,
+  					       "HELO/EHLO", e);
+  
+--- 1877,1885 ----
+  			{
+  				protocol = "SMTP";
+  				SmtpPhase = "server HELO";
+  			}
+!         
+  			/* avoid denial-of-service */
+  			(void) checksmtpattack(&n_helo, MAXHELOCOMMANDS, true,
+  					       "HELO/EHLO", e);
+  
+*************** tlsfail:
+*** 1869,1878 ****
+  			}
+  
+  			if (*q == '\0' && ok)
+  			{
+! 				q = "pleased to meet you";
+! 				sendinghost = sm_strdup_x(p);
+  			}
+  			else if (!AllowBogusHELO)
+  			{
+  				usrerr("501 Invalid domain name");
+--- 1933,1956 ----
+  			}
+  
+  			if (*q == '\0' && ok)
+  			{
+! 
+! #ifdef LIBSPF
+!         if (SPFAction > 0)
+!         {
+!           if (peer_info == NULL)
+!           {
+!             SPF_DIE_NOPEER();
+!           }
+!           SPF_smtp_helo(peer_info, p);
+!         }
+! #endif /* LIBSPF */
+! 
+!         q = "pleased to meet you";
+! 
+! 
+!         sendinghost = sm_strdup_x(p);
+  			}
+  			else if (!AllowBogusHELO)
+  			{
+  				usrerr("501 Invalid domain name");
+*************** tlsfail:
+*** 1883,1891 ****
+  				break;
+  			}
+  			else
+  			{
+! 				q = "accepting invalid domain name";
+  			}
+  
+  			if (gothello)
+  			{
+--- 1961,1979 ----
+  				break;
+  			}
+  			else
+  			{
+! #ifdef LIBSPF  
+!         if (SPFAction > 0)
+!         {
+!           if (peer_info == NULL)
+!           {
+!             SPF_DIE_NOPEER();
+!           }
+!           SPF_smtp_helo(peer_info, p);
+!         }
+! #endif /* LIBSPF */
+!         q = "accepting invalid domain name";
+  			}
+  
+  			if (gothello)
+  			{
+*************** tlsfail:
+*** 2132,2139 ****
+--- 2220,2296 ----
+  				*delimptr++ = '\0';
+  			if (Errors > 0)
+  				sm_exc_raisenew_x(&EtypeQuickAbort, 1);
+  
++ #ifdef LIBSPF
++       SPF_RESULT    SPF_RES;  /* spf result holder */
++       char *spf_r = NULL;     /* spf result response string */
++       char *spf_e = NULL;     /* spf result explanation string */
++       
++       if (SPFAction > 0)
++       {
++         if (peer_info == NULL)
++         {
++           if ((peer_info = SPF_init(MyHostName, anynet_ntoa(&RealHostAddr), 
++             SPFExplain, SPFTrustedForwarder, SPFBestGuess, 
++             SPFTrustedForwarderState, SPFBestGuessState)) == NULL)
++           {
++             SPF_DIE_NOPEER();
++           }
++         }
++        
++         if (SPF_smtp_from(peer_info, p) == FALSE)
++         {
++           message(SPF_SYNTAX);
++           return;
++         } 
++         
++         SPF_RES = SPF_policy_main(peer_info);
++         
++         if ((spf_r = SPF_result(peer_info)) == NULL)
++         {
++           SPF_DIE_NOMEM();
++         }
++         
++         if (SPFExplainState == true)
++         {
++           spf_e = SPF_get_explain(peer_info);
++         }
++     
++         switch (SPF_RES)
++         {
++           case SPF_PASS:
++             if (SPFExplainState == true) { free(spf_e); }
++             free(spf_r);
++             break;
++           case SPF_H_FAIL:
++             spf_out(SPF_RES,spf_e, spf_r, e);
++             if (SPFAction > 1) { message(SPF_FAILED); Errors = 1; }
++             break;
++           case SPF_S_FAIL:
++             spf_out(SPF_RES, spf_e, spf_r, e);
++             if (SPFAction > 2) { message(SPF_FAILED);  Errors = 1; }
++             break;
++           case SPF_NEUTRAL:
++             spf_out(SPF_RES, spf_e, spf_r, e);
++             if (SPFAction > 3) { message(SPF_FAILED);  Errors = 1; }
++             break;
++           case SPF_NONE:
++             spf_out(SPF_RES, spf_e, spf_r, e);
++             if (SPFAction > 4) { message(SPF_FAILED);  Errors = 1; }
++             break;
++           case SPF_ERROR:
++             spf_out(SPF_RES, spf_e, spf_r, e);
++             if (SPFAction > 5) { message(SPF_FAILED);  Errors = 1; }
++             break;
++           case SPF_UNKNOWN:
++             spf_out(SPF_RES, spf_e, spf_r, e);
++             if (SPFAction > 6) { message(SPF_FAILED);  Errors = 1; }
++             break;
++         }
++       } /* if (SPFAction > 0){} */  
++ #endif /* LIBSPF */
++ 
+  			/* Successfully set e_from, allow logging */
+  			e->e_flags |= EF_LOGSENDER;
+  
+  			/* put resulting triple from parseaddr() into macros */
+*************** tlsfail:
+*** 2214,2222 ****
+  
+  				if (tTd(19, 1))
+  					sm_dprintf("MAIL: got arg %s=\"%s\"\n", kp,
+  						vp == NULL ? "<null>" : vp);
+! 
+  				mail_esmtp_args(kp, vp, e);
+  				if (equal != NULL)
+  					*equal = '=';
+  				args[argno++] = kp;
+--- 2371,2381 ----
+  
+  				if (tTd(19, 1))
+  					sm_dprintf("MAIL: got arg %s=\"%s\"\n", kp,
+  						vp == NULL ? "<null>" : vp);
+!         message("MAIL: got arg %s=\"%s\"\n", kp,
+!           vp == NULL ? "<null>" : vp);
+!           
+  				mail_esmtp_args(kp, vp, e);
+  				if (equal != NULL)
+  					*equal = '=';
+  				args[argno++] = kp;
+*************** tlsfail:
+*** 2227,2235 ****
+  			}
+  			args[argno] = NULL;
+  			if (Errors > 0)
+  				sm_exc_raisenew_x(&EtypeQuickAbort, 1);
+- 
+  #if SASL
+  # if _FFR_AUTH_PASSING
+  			/* set the default AUTH= if the sender didn't */
+  			if (e->e_auth_param == NULL)
+--- 2386,2393 ----
+*************** tlsfail:
+*** 2312,2322 ****
+--- 2470,2483 ----
+  				MILTER_REPLY("from");
+  			}
+  #endif /* MILTER */
+  			if (Errors > 0)
++       {
+  				sm_exc_raisenew_x(&EtypeQuickAbort, 1);
++       }
+  
+  			message("250 2.1.0 Sender ok");
++       
+  			smtp.sm_gotmail = true;
+  		    }
+  		    SM_EXCEPT(exc, "[!F]*")
+  		    {
+*************** tlsfail:
+*** 2852,2860 ****
+  
+  doquit:
+  			/* avoid future 050 messages */
+  			disconnect(1, e);
+- 
+  #if MILTER
+  			/* close out milter filters */
+  			milter_quit(e);
+  #endif /* MILTER */
+--- 3013,3020 ----
+*************** smtp_data(smtp, e)
+*** 3003,3010 ****
+--- 3163,3173 ----
+  	ENVELOPE *ee;
+  	char *id;
+  	char *oldid;
+  	char buf[32];
++ #ifdef LIBSPF
++   char *spf_hdr = NULL;
++ #endif
+  
+  	SmtpPhase = "server DATA";
+  	if (!smtp->sm_gotmail)
+  	{
+*************** smtp_data(smtp, e)
+*** 3021,3028 ****
+--- 3184,3204 ----
+  		    RSF_RMCOMM|RSF_UNSTRUCTURED|RSF_COUNT, 3, NULL,
+  		    e->e_id) != EX_OK)
+  		return;
+  
++ #ifdef LIBSPF
++   if (SPFAction > 0 && SPFHeaderState == true)
++   {
++     if ((spf_hdr = SPF_build_header(peer_info)) != NULL)
++     {
++       /* define our ${libspf} macro for sendmail.cf */  
++       macdefine(&e->e_macro, A_TEMP, macid("{libspf}"),
++         (char *)spf_hdr);
++       free(spf_hdr);
++     }  
++   }
++ #endif /* LIBSPF */
++ 
+  	/* put back discard bit */
+  	if (smtp->sm_discard)
+  		e->e_flags |= EF_DISCARD;
+  
+*************** smtp_data(smtp, e)
+*** 3283,3291 ****
+    abortmessage:
+  	if (LogLevel > 4 && bitset(EF_LOGSENDER, e->e_flags))
+  		logsender(e, NULL);
+  	e->e_flags &= ~EF_LOGSENDER;
+! 
+  	/* clean up a bit */
+  	smtp->sm_gotmail = false;
+  
+  	/*
+--- 3459,3467 ----
+    abortmessage:
+  	if (LogLevel > 4 && bitset(EF_LOGSENDER, e->e_flags))
+  		logsender(e, NULL);
+  	e->e_flags &= ~EF_LOGSENDER;
+!   
+  	/* clean up a bit */
+  	smtp->sm_gotmail = false;
+  
+  	/*
+*************** smtp_data(smtp, e)
+*** 3324,3331 ****
+--- 3500,3511 ----
+  	CurEnv = e;
+  	newenvelope(e, e, sm_rpool_new_x(NULL));
+  	e->e_flags = BlankEnvelope.e_flags;
+  
++ #ifdef LIBSPF
++   peer_info = SPF_close(peer_info);
++ #endif
++ 
+  #if _FFR_QUARANTINE
+  	/* restore connection quarantining */
+  	if (smtp->sm_quarmsg == NULL)
+  	{
+*** sendmail/sendmail.h	Wed Sep  3 12:58:27 2003
+--- sendmail.spf/sendmail.h	Sun Feb  8 04:58:45 2004
+*************** EXTERN bool	OnlyOneError;	/*  .... or on
+*** 2170,2177 ****
+--- 2170,2189 ----
+  EXTERN bool	QuickAbort;	/*  .... but only if we want a quick abort */
+  #if _FFR_REQ_DIR_FSYNC_OPT
+  EXTERN bool	RequiresDirfsync;	/* requires fsync() for directory */
+  #endif /* _FFR_REQ_DIR_FSYNC_OPT */
++ #ifdef LIBSPF
++ EXTERN int  SPFAction;  /* type of Action to take based on SPF result */
++ EXTERN bool SPFTarpit;  /* tied to SPFAction, tarpitting occurs upon this result */
++ EXTERN int  SPFTarpitTime;  /* host long we should tarpit for */
++ EXTERN bool SPFHeaderState; /* prepend header 'Received-SPF:' or not */
++ EXTERN u_int32_t SPFBestGuessState;  /* best guess support on or off */
++ EXTERN char *SPFBestGuess;  /* SPF query to execute as best guess */
++ EXTERN u_int32_t SPFTrustedForwarderState; /* trusted forwarder support on or off */
++ EXTERN char *SPFTrustedForwarder; /* SPF query to execute as trusted forwarder */
++ EXTERN bool SPFExplainState;  /* provide explanations upon failures */
++ EXTERN char *SPFExplain;  /* string to expand on to generate explanations */
++ #endif
+  EXTERN bool	ResNoAliases;	/* don't use $HOSTALIASES */
+  EXTERN bool	volatile RestartWorkGroup; /* daemon needs to restart some work groups */
+  EXTERN bool	RrtImpliesDsn;	/* turn Return-Receipt-To: into DSN */
+  EXTERN bool	SaveFrom;	/* save leading "From" lines */
+*** sendmail/readcf.c	Thu Apr  3 15:04:06 2003
+--- sendmail.spf/readcf.c	Sun Feb  8 04:58:45 2004
+*************** static struct optioninfo
+*** 2178,2185 ****
+--- 2178,2207 ----
+  #if _FFR_REQ_DIR_FSYNC_OPT
+  # define O_REQUIRES_DIR_FSYNC	0xd2
+  	{ "RequiresDirfsync",	O_REQUIRES_DIR_FSYNC,	OI_NONE	},
+  #endif /* _FFR_REQ_DIR_FSYNC_OPT */
++ #ifdef LIBSPF
++ #define O_SPF_ACTION    0xd3
++   { "SPFAction", O_SPF_ACTION, OI_NONE },
++ #define O_SPF_TARPIT    0xd4
++   { "SPFTarpit", O_SPF_TARPIT, OI_NONE },
++ #define O_SPF_TARPIT_TIME   0xd5
++   { "SPFTarpitTime", O_SPF_TARPIT_TIME, OI_NONE },
++ #define O_SPF_HEADER_STATE    0xd6
++   { "SPFHeaderState", O_SPF_HEADER_STATE, OI_NONE },
++ #define O_SPF_BEST_GUESS_STATE    0xd7
++   { "SPFBestGuessState", O_SPF_BEST_GUESS_STATE, OI_NONE },
++ #define O_SPF_BEST_GUESS    0xd8
++   { "SPFBestGuess", O_SPF_BEST_GUESS, OI_NONE },
++ #define O_SPF_TRUSTED_FORWARDER_STATE   0xd9
++   { "SPFTrustedForwarderState", O_SPF_TRUSTED_FORWARDER_STATE, OI_NONE },
++ #define O_SPF_TRUSTED_FORWARDER   0xda
++   { "SPFTrustedForwarder", O_SPF_TRUSTED_FORWARDER, OI_NONE },
++ #define O_SPF_EXPLAIN_STATE   0xdb
++   { "SPFExplainState", O_SPF_EXPLAIN_STATE, OI_NONE },
++ #define O_SPF_EXPLAIN   0xdc
++   { "SPFExplain", O_SPF_EXPLAIN, OI_NONE },
++ #endif /*LIBSPF */
+  	{ NULL,				'\0',		OI_NONE	}
+  };
+  
+  # define CANONIFY(val)
+*************** setoption(opt, val, safe, sticky, e)
+*** 3678,3685 ****
+--- 3700,3749 ----
+  # endif /* REQUIRES_DIR_FSYNC */
+  		break;
+  #endif /* _FFR_REQ_DIR_FSYNC_OPT */
+  
++ #ifdef LIBSPF
++     case O_SPF_ACTION:
++     SPFAction = atoi(val);
++     break;
++     
++     case O_SPF_TARPIT:
++     SPFTarpit = atoi(val);
++     break;
++     
++     case O_SPF_TARPIT_TIME:
++     SPFTarpitTime = atoi(val);
++     break;
++     
++     case O_SPF_HEADER_STATE:
++     SPFHeaderState = atobool(val);
++     break;
++     
++     case O_SPF_BEST_GUESS_STATE:
++     SPFBestGuessState = atoi(val);
++     break;
++     
++     case O_SPF_BEST_GUESS:
++     SPFBestGuess = newstr(val);
++     break;
++     
++     case O_SPF_TRUSTED_FORWARDER_STATE:
++     SPFTrustedForwarderState = atoi(val);
++     break;
++     
++     case O_SPF_TRUSTED_FORWARDER:
++     SPFTrustedForwarder = newstr(val);
++     break;
++     
++     case O_SPF_EXPLAIN_STATE:
++     SPFExplainState = atobool(val);
++     break;
++     
++     case O_SPF_EXPLAIN:
++     SPFExplain = newstr(val);
++     break;
++ #endif /*LIBSPF */
++ 
+  	  default:
+  		if (tTd(37, 1))
+  		{
+  			if (isascii(opt) && isprint(opt))
+*** sendmail/Makefile.m4	Sun Sep  8 19:48:54 2002
+--- sendmail.spf/Makefile.m4	Sun Feb  8 04:58:45 2004
+*************** bldPRODUCT_START(`executable', `sendmail
+*** 6,13 ****
+--- 6,16 ----
+  define(`bldBIN_TYPE', `G')
+  define(`bldINSTALL_DIR', `')
+  define(`bldSOURCES', `main.c alias.c arpadate.c bf.c collect.c conf.c control.c convtime.c daemon.c deliver.c domain.c envelope.c err.c headers.c macro.c map.c mci.c milter.c mime.c parseaddr.c queue.c readcf.c recipient.c sasl.c savemail.c sfsasl.c shmticklib.c sm_resolve.c srvrsmtp.c stab.c stats.c sysexits.c timers.c tls.c trace.c udb.c usersmtp.c util.c version.c ')
+  PREPENDDEF(`confENVDEF', `confMAPDEF')
++ APPENDDEF(`confENVDEF', `-DLIBSPF')
++ APPENDDEF(`confLIBS', `-lspf')
++ 
+  bldPUSH_SMLIB(`sm')
+  bldPUSH_SMLIB(`smutil')
+  
+  dnl hack: /etc/mail is not defined as "location of .cf" in the build system
+*** cf/cf/generic-bsd4.4.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-bsd4.4.cf	Sun Feb  8 05:13:18 2004
+*************** Tuucp
+*** 538,545 ****
+--- 538,546 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 554,561 ****
+--- 555,591 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-hpux10.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-hpux10.cf	Sun Feb  8 05:13:08 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,592 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trustSPFed forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-hpux9.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-hpux9.cf	Sun Feb  8 05:13:59 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,593 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-mpeix.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-mpeix.cf	Sun Feb  8 05:12:35 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,592 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-nextstep3.3.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-nextstep3.3.cf	Sun Feb  8 05:10:10 2004
+*************** Tuucp
+*** 538,545 ****
+--- 538,546 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 554,561 ****
+--- 555,591 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-osf1.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-osf1.cf	Sun Feb  8 05:12:15 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,592 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-solaris.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-solaris.cf	Sun Feb  8 05:14:33 2004
+*************** Tuucp
+*** 538,545 ****
+--- 538,546 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 554,561 ****
+--- 555,591 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-sunos4.1.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-sunos4.1.cf	Sun Feb  8 05:11:35 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,592 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-ultrix4.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-ultrix4.cf	Sun Feb  8 05:11:17 2004
+*************** Tuucp
+*** 539,546 ****
+--- 539,547 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 555,562 ****
+--- 556,592 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** cf/cf/generic-linux.cf	Tue Sep 16 13:54:32 2003
+--- cf/cf/generic-linux.cf	Sun Feb  8 05:19:03 2004
+*************** Tuucp
+*** 543,550 ****
+--- 543,551 ----
+  #   Format of headers   #
+  #########################
+  
+  H?P?Return-Path: <$g>
++ HReceived-SPF: ${libspf}
+  HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+  	$.$?{auth_type}(authenticated$?{auth_ssf} bits=${auth_ssf}$.)
+  	$.by $j ($v/$Z)$?r with $r$. id $i$?{tls_version}
+  	(version=${tls_version} cipher=${cipher} bits=${cipher_bits} verify=${verify})$.$?u
+*************** H?x?Full-Name: $x
+*** 559,566 ****
+--- 560,596 ----
+  # H?l?Received-Date: $b
+  H?M?Resent-Message-Id: <$t.$i@$j>
+  H?M?Message-Id: <$t.$i@$j>
+  
++ #############################################################################################
++ ### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
++ #############################################################################################
++ #
++ # int (0 - 7) - Action to take based on SPF result greater than this number
++ # bool (0 -7) - Tarpit based on SPF result greater than this number
++ # int (0 - ?) - how long to tarpit for
++ # bool (true/false) - Apply 'Received-SPF:' headers to message headers?
++ # int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
++ # text - Place SPF query language here to be executed during best guess attempt
++ # int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
++ # text - Place SPF query language here to be executed during trusted forwarder attempt 
++ # bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
++ # text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
++ #
++ ##############################################################################################
++ ##############################################################################################
++ 
++ O SPFAction=1
++ O SPFTarpit=0
++ O SPFTarpitTime=60
++ O SPFHeaderState=True
++ O SPFBestGuessState=0
++ O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
++ O SPFTrustedForwarderState=0
++ O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
++ O SPFExplainState=True
++ O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
++ 
+  #
+  ######################################################################
+  ######################################################################
+  #####
+*** sendmail/spf.h	Wed Feb 25 07:04:05 2004
+--- sendmail.spf/spf.h	Wed Feb 25 04:13:01 2004
+***************
+*** 0 ****
+--- 1,371 ----
++ /* libspf - Sender Permitted From library
++ *	
++ *  ANSI C implementation of draft-mengwong-spf-02.9.7.txt
++ *
++ *  Author: James Couzens <jcouzens@obscurity.org>
++ *  Author: Sean Comeau <scomeau@obscurity.org>
++ *
++ *  FILE: spf.h
++ *  DESC: main library header file 
++ *
++ *  License:
++ *
++ *  The libspf Software License, Version 1.0
++ *
++ *  Copyright (c) 2004 James Couzens & Sean Comeau  All rights
++ *  reserved.
++ *
++ *  Redistribution and use in source and binary forms, with or without
++ *  modification, are permitted provided that the following conditions
++ *  are met:
++ *
++ *  1. Redistributions of source code must retain the above copyright
++ *     notice, this list of conditions and the following disclaimer.
++ *
++ *  2. Redistributions in binary form must reproduce the above copyright
++ *     notice, this list of conditions and the following disclaimer in
++ *     the documentation and/or other materials provided with the
++ *     distribution.
++ *
++ *  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
++ *  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
++ *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ *  DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
++ *  ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
++ *  USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++ *  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
++ *  OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ *  SUCH DAMAGE.
++ * 
++ */
++ 
++ 
++ #ifndef	_SPF_H
++ #define	_SPF_H 1
++ 
++ #include <sys/types.h>    /* typedefs */
++ #include <arpa/inet.h>    /* in_addr struct */
++ 
++ __BEGIN_DECLS
++ 
++ /* spf protocol version we support */
++ #define SPF_VERSION 1
++ 
++ /*
++ *  For reference purposes commented out are the constants based on 
++ *  RFC 883, RFC 1034, RFC 1035.  Because we're working with IN_TXT
++ *  records we will use a larger packet size at 65536 bytes which 
++ *  is likey to cover most circumstances.
++ *
++ *  #define PACKETSZ  512   max response packet size
++ *  #define MAXDNAME  1025  max uncompressed IN_TXT record 
++ *  #define MAXCDNAME 255   max compressed IN_TXT record
++ *
++ */
++ 
++ #define MAX_DEBUG_LEN 1024
++ 
++ #define MAX_MACRO_LEN 1024  /* max length of an expanded macro */
++ #define MAX_PLEN      1024  /* buffer to make UTIL_printf thread safe */
++ #define LOCAL_PART    256   /* local-part, text before @ in email addy */
++ #define ENV_SENDER    512   /* entire FROM: string passed by MTA */
++ #define CUR_DOM       256   /* text after @ in email addy for cur query */
++ #define UTC_TIME      22    /* time since epoch */
++ #define IP_ADDR       17    /* ip of remote peer - DON'T CHANGE FROM 17!! */
++ #define IP_VER        8     /* ip protocol version */
++ #define ENV_HELO      512   /* entire HELO string passed by MTA */
++ 
++ #define MAX_HNAME     256   /* hostname of MTA */
++ #define MAX_RESULT    64    /* human readable SPF result */
++ #define MAX_ERROR     96    /* human readable error reason */
++ #define EXPLAIN_S     256   /* change to EXPLAIN when cleaning up */
++ #define ENV_RECV      512   /* Received-SPF: header string */
++ #define MAX_RES_STR   12    /* maximum legnth of a res str eg: "pass" */
++ 
++ #define MAX_MECHANISM 256   /* maximum length of a mechanism */
++ #define MAX_HEADER    512   /* maximum length of header for prepend */
++ #define MAX_SMTP_RES  256   /* maximum length of smtp resonse string */
++ 
++ /* human readable string equivalents of spf responses */
++ #define HR_PASS     "pass"
++ #define HR_NONE     "none"
++ #define HR_S_FAIL   "softfail"
++ #define HR_H_FAIL   "fail"
++ #define HR_ERROR    "error"
++ #define HR_NEUTRAL  "neutral"
++ #define HR_UNKNOWN  "unknown"
++ #define HR_UNMECH   "unknown mechanism"
++ 
++ /* default explanation */
++ #define SPF_EXPLAIN "See http://spf.pobox.com/why.html?sender=%{S}&"      \
++                     "ip=%{I}&receiver=%{xR}"
++ 
++ /* default best guess */
++ #define SPF_GUESS   "v=spf1 a/24 mx/24 ptr "
++ 
++ /* trusted forwarder */
++ #define SPF_TRUSTED "v=spf1 include:spf.trusted-forwarder.org "
++ 
++ /* SPF_BOOL
++ *
++ *  Our own internal boolean enumeration, simple true or false.
++ *
++ */
++ typedef enum SPF_BOOL
++ {
++   FALSE = 0,
++   TRUE
++ } SPF_BOOL;
++ 
++ 
++ /* SPF_RESULT
++ *
++ *  Error codes representing the result of an SPF policy examination
++ *
++ *  sucessful parse (some match was made) (+all)
++ *  not participating (no SPF/TXT records)
++ *  ~all 
++ *  failed parse (no match made) (-all)
++ *  dns problem / error
++ *  ?all 
++ *  permanent parsing error during record examination
++ *
++ */
++ typedef enum SPF_RESULT
++ {
++   SPF_PASS = 0,     /* + */
++   SPF_NONE,       
++   SPF_S_FAIL,       /* ~ */
++   SPF_H_FAIL,       /* - */
++   SPF_ERROR,
++   SPF_NEUTRAL,      /* ? */
++   SPF_UNKNOWN,
++   SPF_UNMECH        /* unknown mechanism */
++ } SPF_RESULT;
++ 
++ 
++ /* SPF_ACTION
++ *
++ *  Error codes representing the the action to be taken as a result 
++ *  of the response the library was able to obtain whilst trying to
++ *  obtain or examin an SPF policy
++ *
++ */
++ typedef enum SPF_ACTION
++ {
++   DEFER = 0,
++   TARPIT,
++   ALLOW,
++   REJECT
++ } SPF_ACTION;
++ 
++ 
++ /* SPF_MECHANISM
++ *
++ *  Error codes representing the various mechanism types employed
++ *  as defined in the RFC
++ *
++ */
++ typedef enum SPF_MECHANISM
++ {
++   NO_POLICY = 0,
++   VERSION,
++   ALL,
++   INCLUDE,
++   A,
++   MX,
++   PTR,
++   IP4,
++   IP6,
++   EXISTS,
++   REDIRECT,
++   EXPLAIN,
++   DEFAULT, /* this is OLD school for early adopters = ~,?,+,- */
++   UNMECH
++ } SPF_MECHANISM;
++ 
++ 
++ typedef struct spf_result_t
++ {
++   size_t                  sl;      /* spf result string length */
++   char                    s[32];   /* spf result type string */
++   SPF_RESULT              i;       /* spf result type */
++   size_t                  hl;      /* length of header string */
++   char                    h[512];  /* Received-SPF: header string */
++   char                    p;       /* prefix identifier */
++ } spf_result_t;
++ 
++ 
++ /* policy_addr_t
++ * 
++ *  Storage container used to store parsed out ip addresses in their
++ *  binary format (in_addr struct) and an unsigned integer containing
++ *  the netmask
++ *
++ */
++ typedef struct policy_addr_s
++ {
++   struct in_addr    addr;     /* in_addr struct (unsigned long) */
++   int8_t            cidr;     /* address cidr length */
++   SPF_RESULT        prefix;   /* spf prefix (-,+,~,?) */  
++ } policy_addr_t;
++ 
++ 
++ /* spf_config_t
++ *
++ * Global config structure
++ *
++ */
++ typedef struct spf_config_s
++ {
++   int               level;          /* w:  */
++ } spf_config_t;
++ 
++ 
++ /* split_str_node_t
++ *
++ *  This structure is used to store where the head and tail are when 
++ *  creating a list of split_str_node_t structures.
++ *
++ */
++ typedef struct strbuf_node_s
++ {
++   size_t                 len;    /* length of string */
++ 	char                   *s;     /* expanded string macro */
++ 	struct strbuf_node_s   *next;  /* pointer to next node */
++ } strbuf_node_t;
++ 
++ 
++ /* strbuf_t
++ *
++ *  This structure is used exclusively by marco.c functions and is used
++ *  to store macros during parsing.
++ *
++ */
++ typedef struct strbuf_s
++ {
++ 	strbuf_node_t   *head;      /* head node */
++   u_int8_t        elements;   /* number of nodes in list */
++ } strbuf_t;
++ 
++ 
++ /* split_str_node_t
++ *
++ *  This structure is used to store where the head and tail are when 
++ *  creating a list of split_str_node_t structures.
++ *
++ */
++ typedef struct split_str_node_s
++ {
++   size_t                   len;    /* length of string */
++   char                     *s;     /* expanded string macro */
++   struct split_str_node_s  *next;  /* pointer to next node */
++ } split_str_node_t;
++ 
++ 
++ /* split_str_t
++ *
++ *  This structure is used exclusively by the UTIL_reverse function and is
++ *  used to reverse a string using a semi-arbitrary delimiter (see 
++ *  UTIL_is_spf_delim for valid delimiters, or the SPF RFC)
++ */
++ typedef struct split_str_s
++ {
++ 	split_str_node_t  *head;      /* head node */
++   split_str_node_t  *tail;      /* tail node */
++ 	int               elements;   /* number of nodes in list */
++ } split_str_t;
++ 
++ 
++ /* peer_info_t
++ * 
++ *  Used to store information about the connected peer.  Only one of
++ *  SMTP protocol specific three strings will be necessarily be 
++ *  populated in the following order of precedence: FROM, EHLO, HELO.
++ *
++ *  The ip_ver string will contain 'in-addr' if the connecting peer
++ *  is using IPv4, or 'ip6' if the connect
++ *
++ *  Various political and technical pressures have recently led to 
++ *  the deprecation of the IP6.INT name space in favour of IP6.ARPA. 
++ *  This makes IPv6 PTR data management difficult, since interim 
++ *  clients will search IP6.INT while standard clients will search 
++ *  IP6.ARPA. We present a simple method based on DNAME RR's 
++ *  (see [RFC2672]) and ISC BIND9 whereby zone information can be 
++ *  managed in a single location and then made visible in two 
++ *  namespaces.  (http://www.isc.org/tn/isc-tn-2002-1.html)
++ *
++ *  RFC 937 (POP) states: The maximum length of a command line is 512 
++ *  characters (including the command word and the CRLF).
++ *  POLICY_MATCH = TRUE
++ *
++ *  Note: from can be removed and just work on local_part@cur_dom 
++ *
++ */
++ typedef struct peer_info_s
++ {
++   u_int8_t        use_trust;        /* if 1 then enabled trustedfwder */
++   u_int8_t        use_guess;        /* if 1 then enabled best guess */
++   
++   spf_result_t    *spf_result;      /* table of str, see spf_result_t */
++   SPF_RESULT      RES;              /* SPF error codes for result */
++   SPF_RESULT      RES_P;            /* prefix behaviour */
++   char            *rs;              /* ptr str result of SPF query */
++   
++   SPF_BOOL        ALL;              /* Was all mechanism parsed */
++   char            *p;               /* prefix from all mechanism */
++   
++   u_int8_t        spf_ver;          /* version of SPF */ 
++     
++   char            *helo;            /* HELO string */
++   char            *ehlo;            /* pointer to HELO string */
++   char            *from;            /* FROM string */
++    
++   char            *explain;         /* Result of an explain query */
++   char            *guess;           /* Query if result is TF fails */
++   char            *trusted;         /* Query if primary result is none */
++   char            *ptr_mhost;       /* validate against during ptr mech */
++   char            *cur_dom;         /* @domain of the current query */
++   char            *cur_eaddr;       /* current email address, updated during
++                                      * to be accurate during INCLUDE and
++                                      * REDIRECT mechanisms
++                                      */
++   char            *mta_hname;       /* ptr to MTA hname eg: mail.foo.org */
++ 
++   char            ip_ver[IP_VER];   /* IP Protocol Version */
++   struct in_addr  addr;             /* IP of the remote host (peer) */
++   char            *r_ip;            /* pointer to remote ip from MTA */
++   char            *r_vhname;        /* validated hostname of remotehost */
++   
++   char local_part[LOCAL_PART];      /* local part of address (user) */
++   char utc_time[UTC_TIME];          /* The number of seconds since the Epoch */
++   char last_m[MAX_MECHANISM];       /* last mechanism parsed */
++   char error[MAX_ERROR];            /* error (if any) that caused failure */
++   
++ } peer_info_t;
++ 
++ extern spf_config_t   confg;
++ extern u_int8_t       spf_rlevel;
++ 
++ /*  Main library functions (spf.c) */
++ extern void         SPF_dbg_level(int level);
++ extern peer_info_t  *SPF_init(const char *local, const char *rip, const char *expl,
++                       const char *tf, const char *guess, u_int32_t use_trust, 
++                       u_int32_t use_guess);
++ extern peer_info_t  *SPF_close(peer_info_t *peer_info);
++ extern SPF_RESULT   SPF_policy_main(peer_info_t *peer_info);
++ extern SPF_BOOL     SPF_parse_policy(peer_info_t *peer_info, const char *policy);
++ extern char         *SPF_result(peer_info_t *peer_info);
++ extern SPF_BOOL     SPF_smtp_from(peer_info_t *peer_info, const char *s);
++ extern SPF_BOOL     SPF_smtp_helo(peer_info_t *peer_info, const char *s);
++ 
++ /* Functions that alter headers (header.c) */
++ extern char         *SPF_build_header(peer_info_t *peer_info);
++ extern char         *SPF_get_explain(peer_info_t *peer_info);
++ 
++ __END_DECLS
++ 
++ #endif /* spf.h */

@@ -1,0 +1,509 @@
+# File: libspf-1.0.0/patches/Sendmail/8.13.x/sendmail-8.13.4-libspf-1.0.0.diff
+# Date: 04/28/05 
+# Desc: Patch for libSPF v1.0 against Sendmail 8.13.4 
+# 
+# Patch coder: Teddy <teddy@teddy.ch>
+# Patch coder: James Couzens <jcouzens@codeshare.ca>
+# Diff author: Teddy <teddy@teddy.ch>
+# Diff author: James Couzens <jcouzens@codeshare.ca>
+#
+# Contents: 
+#
+# diff -u -U4 -N -p -r sendmail-8.13.4/cf/m4/proto.m4 sendmail-8.13.4.libspf/cf/m4/proto.m4 > s.diff
+# diff -u -U4 -N -p -r sendmail-8.13.4/cf/feature/spf.m4 sendmail-8.13.4.libspf/cf/feature/spf.m4 >> s.diff
+# diff -u -U4 -N -p -r sendmail-8.13.4/sendmail/Makefile.m4 sendmail-8.13.4.libspf/sendmail/Makefile.m4 >> s.diff
+# diff -u -U4 -N -p -r sendmail-8.13.4/sendmail/srvrsmtp.c sendmail-8.13.4.libspf/sendmail/srvrsmtp.c >> s.diff
+# diff -u -U4 -N -p -r sendmail-8.13.4/sendmail/readcf.c sendmail-8.13.4.libspf/sendmail/readcf.c >> s.diff
+# diff -u -U4 -N -p -r sendmail-8.13.4/sendmail/sendmail.h sendmail-8.13.4.libspf/sendmail/sendmail.h >> s.diff
+#
+# I tested this patch which is updated to participate with 8.13.4 and it
+# went fine.  I will however be updating the HOWTO on the website in the 
+# near future, although following the existing one did result in success
+# I noticed a couple of errors or glitches that could be cleaned up..
+#
+--- sendmail-8.13.4/cf/m4/proto.m4	2004-08-04 14:29:55.000000000 -0700
++++ sendmail-8.13.4.libspf/cf/m4/proto.m4	2005-04-28 08:25:21.000000000 -0700
+@@ -640,8 +640,36 @@ _OPTION(TLSSrvOptions, `confTLS_SRV_OPTI
+ 
+ # Input mail filters
+ _OPTION(InputMailFilters, `confINPUT_MAIL_FILTERS', `')
+ 
++# SPFAction
++_OPTION(SPFAction, `confSPFAction', `1')
++
++# SPFHeaderState
++_OPTION(SPFHeaderState, `confSPFHeaderState', `True')
++
++# SPFBestGuessState
++_OPTION(SPFBestGuessState, `confSPFBestGuessState', `0')
++
++# SPFTrustedForwarderState
++_OPTION(SPFTrustedForwarderState, `confSPFTrustedForwarderState', `0')
++
++# SPFExplainState
++_OPTION(SPFExplainState, `confSPFExplainState', `True')
++
++# SPFBestGuess
++_OPTION(SPFBestGuess, `confSPFBestGuess', `v=spf1 a/24 mx/24 ptr')
++
++# SPFTrustedForwarder
++_OPTION(SPFTrustedForwarder, `confSPFTrustedForwarder', `v=spf1 include:spf.trusted-forwarder.org')
++
++# SPFExplain
++_OPTION(SPFExplain, `confSPFExplain', `See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR}')
++
++# SPFDebug
++_OPTION(SPFDebug, `confSPFDebug', `0')
++
++
+ ifelse(len(X`'_MAIL_FILTERS_DEF), `1', `dnl', `dnl
+ # Milter options
+ _OPTION(Milter.LogLevel, `confMILTER_LOG_LEVEL', `')
+ _OPTION(Milter.macros.connect, `confMILTER_MACROS_CONNECT', `')
+@@ -701,8 +729,9 @@ ifdef(`confTRUSTED_USERS', `T`'confTRUST
+ 
+ ifdef(`confFROM_HEADER',, `define(`confFROM_HEADER', `$?x$x <$g>$|$g$.')')dnl
+ ifdef(`confMESSAGEID_HEADER',, `define(`confMESSAGEID_HEADER', `<$t.$i@$j>')')dnl
+ H?P?Return-Path: <$g>
++HReceived-SPF: ${spfheader}
+ HReceived: confRECEIVED_HEADER
+ H?D?Resent-Date: $a
+ H?D?Date: $a
+ H?F?Resent-From: confFROM_HEADER
+@@ -1787,8 +1816,9 @@ undivert(8)
+ ###  check_mail -- check SMTP ``MAIL FROM:'' command argument
+ ######################################################################
+ 
+ SLocal_check_mail
++undivert(10)
+ Scheck`'_U_`'mail
+ R$*			$: $1 $| $>"Local_check_mail" $1
+ R$* $| $#$*		$#$2
+ R$* $| $*		$@ $>"Basic_check_mail" $1
+--- sendmail-8.13.4/cf/feature/spf.m4	1969-12-31 16:00:00.000000000 -0800
++++ sendmail-8.13.4.libspf/cf/feature/spf.m4	2005-04-28 08:25:21.000000000 -0700
+@@ -0,0 +1,27 @@
++divert(-1)
++#
++# Written 2004 Teddy
++#
++# Checks the SPF records of sending domain
++#
++divert(0)
++ifdef(`_SPF_',`dnl',`dnl
++VERSIONID(`$Id: sendmail-8.13.4-libspf-1.0.diff,v 1.1 2007/11/13 00:51:35 root Exp $')
++divert(-1)
++define(`_SPF_',`')')dnl
++define(`confSPFAction',ifelse(len(X`'_ARG_),`1',`1',_ARG_))dnl
++define(`confSPFHeaderState',ifelse(len(X`'_ARG2_),`1',`True',_ARG2_))dnl
++define(`confSPFBestGuessState',ifelse(len(X`'_ARG3_),`1',`0',_ARG3_))dnl
++define(`confSPFTrustedForwarderState',ifelse(len(X`'_ARG4_),`1',`0',_ARG4_))dnl
++define(`confSPFExplainState',ifelse(len(X`'_ARG5_),`1',`True',_ARG5_))dnl
++define(`confSPFBestGuess',ifelse(len(X`'_ARG6_),`1',`v=spf1 a/24 mx/24 ptr',_ARG6_))dnl
++define(`confSPFTrustedForwarder',ifelse(len(X`'_ARG7_),`1',`v=spf1 include:spf.trusted-forwarder.org',_ARG7_))dnl
++define(`confSPFExplain',ifelse(len(X`'_ARG8_),`1',`See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR}',_ARG8_))dnl
++define(`confSPFDebugState',ifelse(len(X`'_ARG_),`0',`0',_ARG_))dnl
++
++divert(8)
++# Checks the SPF records of sending domain
++R$*			$: $1  $| <?>$&{spfreject}<?>
++R$* $| <?>1<?>		$#error $@ 5.7.1 $: "550 Mail from [" $&{client_addr} "] Rejected. " $&{spfexplain}
++R$* $| <?>$*		$: $1
++divert(-1)
+--- sendmail-8.13.4/sendmail/Makefile.m4	2003-08-08 13:31:17.000000000 -0700
++++ sendmail-8.13.4.libspf/sendmail/Makefile.m4	2005-04-28 08:25:21.000000000 -0700
+@@ -6,8 +6,10 @@ bldPRODUCT_START(`executable', `sendmail
+ define(`bldBIN_TYPE', `G')
+ define(`bldINSTALL_DIR', `')
+ define(`bldSOURCES', `main.c alias.c arpadate.c bf.c collect.c conf.c control.c convtime.c daemon.c deliver.c domain.c envelope.c err.c headers.c macro.c map.c mci.c milter.c mime.c parseaddr.c queue.c ratectrl.c readcf.c recipient.c sasl.c savemail.c sfsasl.c shmticklib.c sm_resolve.c srvrsmtp.c stab.c stats.c sysexits.c timers.c tls.c trace.c udb.c usersmtp.c util.c version.c ')
+ PREPENDDEF(`confENVDEF', `confMAPDEF')
++APPENDDEF(`confENVDEF', `-DLIBSPF')
++APPENDDEF(`confLIBS', `-lspf')
+ bldPUSH_SMLIB(`sm')
+ bldPUSH_SMLIB(`smutil')
+ 
+ dnl hack: /etc/mail is not defined as "location of .cf" in the build system
+--- sendmail-8.13.4/sendmail/srvrsmtp.c	2005-03-15 16:36:09.000000000 -0800
++++ sendmail-8.13.4.libspf/sendmail/srvrsmtp.c	2005-04-28 08:25:21.000000000 -0700
+@@ -41,8 +41,12 @@ extern void	tls_set_verify __P((SSL_CTX 
+ # define TLS_VERIFY_CLIENT() tls_set_verify(srv_ctx, srv_ssl, \
+ 				bitset(SRV_VRFY_CLT, features))
+ #endif /* STARTTLS */
+ 
++#ifdef LIBSPF
++#include <spf.h>
++#endif /* LIBSPF */
++
+ /* server features */
+ #define SRV_NONE	0x0000	/* none... */
+ #define SRV_OFFER_TLS	0x0001	/* offer STARTTLS */
+ #define SRV_VRFY_CLT	0x0002	/* request a cert */
+@@ -427,8 +431,31 @@ do								\
+ 		sm_setproctitle(true, e, "%s %s: %.80s",	\
+ 				qid_printname(e), CurSmtpClient, inp);	\
+ 	}
+ 
++#ifdef LIBSPF
++
++#define SPF_FAILED  "554 transaction failed (SPF)\r\n"
++#define SPF_SYNTAX  "555 syntax error (#5.5.4)\r\n"
++
++#define SPF_DIE_NOIP()                                  \
++	sm_syslog(LOG_ERR, e->e_id, "Die no IP (SPF)");          \
++	message("421 unable to store remote ip (SPF)\r\n");   \
++	disconnect(1, e);
++
++#define SPF_DIE_NOPEER()                                \
++	sm_syslog(LOG_ERR, e->e_id, "Invalid peer structure (SPF)"); \
++	message("421 invalid peer structure (SPF)\r\n");      \
++	disconnect(1, e);
++
++#define SPF_DIE_NOMEM()                                 \
++	sm_syslog(LOG_ERR, e->e_id, "Out of Memory (SPF)");      \
++	message("421 out of memory (#4.3.0)\r\n");            \
++	disconnect(1, e);
++
++peer_info_t   *peer_info    = NULL; /* peer_info structure */
++
++#endif /* LIBSPF */
+ 
+ void
+ smtp(nullserver, d_flags, e)
+ 	char *volatile nullserver;
+@@ -519,8 +546,16 @@ smtp(nullserver, d_flags, e)
+ # endif /* _FFR_NO_PIPE */
+ #endif /* PIPELINING */
+ 	volatile time_t log_delay = (time_t) 0;
+ 
++#ifdef LIBSPF
++	SPF_RESULT    SPF_RES;  /* spf result holder */
++	char *spf_r = NULL;     /* spf result response string */
++	char *spf_e = NULL;     /* spf result explanation string */
++	char *spf_reject = NULL;/* spf reject as string for sendmail.cf */
++	char *spf_hdr = NULL;   /* spf header */
++#endif /* LIBSPF */
++
+ 	save_sevenbitinput = SevenBitInput;
+ 	smtp.sm_nrcpts = 0;
+ #if MILTER
+ 	smtp.sm_milterize = (nullserver == NULL);
+@@ -879,8 +914,25 @@ smtp(nullserver, d_flags, e)
+ 		time_t msecs = 0;
+ 		char **pvp;
+ 		char pvpbuf[PSBUFSIZE];
+ 
++#ifdef LIBSPF
++		if (SPFAction > 0)
++		{
++			if ((peer_info = SPF_init(MyHostName, anynet_ntoa(&RealHostAddr),
++				SPFExplain, SPFTrustedForwarder, SPFBestGuess,
++				SPFTrustedForwarderState, SPFBestGuessState)) == NULL)
++			{
++				sm_syslog(LOG_INFO, e->e_id,
++					"SPF_init FAILED with args: (%s) (%s)",
++					CurSmtpClient, MyHostName);
++					disconnect(1, e);
++			}
++
++			confg.level = SPFDebugState;
++		}
++#endif /* LIBSPF */
++
+ 		/* Ask the rulesets how long to pause */
+ 		pvp = NULL;
+ 		r = rscap("greet_pause", peerhostname,
+ 			  anynet_ntoa(&RealHostAddr), e,
+@@ -937,8 +989,23 @@ smtp(nullserver, d_flags, e)
+   greeting:
+ 
+ #endif /* STARTTLS */
+ 
++#ifdef LIBSPF
++	if (SPFAction > 0)
++	{
++		if ((peer_info = SPF_init(MyHostName, anynet_ntoa(&RealHostAddr),
++			SPFExplain, SPFTrustedForwarder, SPFBestGuess,
++			SPFTrustedForwarderState, SPFBestGuessState)) == NULL)
++		{
++			sm_syslog(LOG_INFO, e->e_id,
++			"SPF_init FAILED with args: (%s) (%s)",
++			CurSmtpClient, MyHostName);
++			disconnect(1, e);
++		}
++	}
++#endif /* LIBSPF */
++
+ 	/* output the first line, inserting "ESMTP" as second word */
+ 	if (*greetcode == '5')
+ 		(void) sm_snprintf(inp, sizeof inp, "%s not accepting messages",
+ 				   hostname);
+@@ -1903,9 +1970,8 @@ tlsfail:
+ 					goto doquit;
+ 			}
+ 			break;
+ #endif /* STARTTLS */
+-
+ 		  case CMDHELO:		/* hello -- introduce yourself */
+ 		  case CMDEHLO:		/* extended hello */
+ 			DELAY_CONN("EHLO");
+ 			if (c->cmd_code == CMDEHLO)
+@@ -1980,22 +2046,42 @@ tlsfail:
+ 			}
+ 
+ 			if (*q == '\0' && ok)
+ 			{
++#ifdef LIBSPF
++				if (SPFAction > 0)
++				{
++					if (peer_info == NULL)
++					{
++						SPF_DIE_NOPEER();
++					}
++					SPF_smtp_helo(peer_info, p);
++				}
++#endif /* LIBSPF */
+ 				q = "pleased to meet you";
+ 				sendinghost = sm_strdup_x(p);
+ 			}
+ 			else if (!AllowBogusHELO)
+ 			{
+ 				usrerr("501 Invalid domain name");
+ 				if (LogLevel > 9)
+ 					sm_syslog(LOG_INFO, CurEnv->e_id,
+-						  "invalid domain name (%s) from %.100s",
+-						  p, CurSmtpClient);
++					"invalid domain name (%s) from %.100s",
++					p, CurSmtpClient);
+ 				break;
+ 			}
+ 			else
+ 			{
++#ifdef LIBSPF
++				if (SPFAction > 0)
++				{ 
++					if (peer_info == NULL)
++					{ 
++						SPF_DIE_NOPEER();
++					}
++					SPF_smtp_helo(peer_info, p);
++				}
++#endif /* LIBSPF */
+ 				q = "accepting invalid domain name";
+ 			}
+ 
+ 			if (gothello)
+@@ -2225,8 +2311,98 @@ tlsfail:
+ 				*delimptr++ = '\0';
+ 			if (Errors > 0)
+ 				sm_exc_raisenew_x(&EtypeQuickAbort, 1);
+ 
++#ifdef LIBSPF
++			if ((SPFAction > 0)
++#if SASL
++				&& (authenticating != SASL_IS_AUTH)
++#endif
++			)
++			{
++				if (peer_info == NULL)
++				{
++					if ((peer_info = SPF_init(MyHostName, anynet_ntoa(&RealHostAddr),
++						SPFExplain, SPFTrustedForwarder, SPFBestGuess,
++						SPFTrustedForwarderState, SPFBestGuessState)) == NULL)
++					{
++						SPF_DIE_NOPEER();
++					}
++
++					confg.level = SPFDebugState;
++				}
++
++				if (SPF_smtp_from(peer_info, p) == SPF_FALSE)
++				{
++					message(SPF_SYNTAX);
++					return;
++				}
++
++				/* get Result of SPF-Check */
++				SPF_RES = SPF_policy_main(peer_info);
++				if ((spf_r = SPF_result(peer_info)) == NULL)
++				{
++					SPF_DIE_NOMEM();
++				}
++				else
++				{
++					macdefine(&e->e_macro, A_TEMP, macid("{spfresult}"), (char *)spf_r);
++					free(spf_r);
++				}
++
++				/* define our macros ${spfreject}, ${spfexplain} and ${spfheader} for sendmail.cf */
++				spf_reject = malloc(2);
++				*(spf_reject + 1) = 0;
++
++				switch (SPF_RES)
++				{
++					case SPF_PASS:
++						*spf_reject = '0';
++						break;
++					case SPF_H_FAIL:
++						*spf_reject = (SPFAction > 1 ? '1' : '0');
++						break;
++					case SPF_S_FAIL:
++						*spf_reject = (SPFAction > 2 ? '1' : '0');
++						break;
++					case SPF_NEUTRAL:
++						*spf_reject = (SPFAction > 3 ? '1' : '0');
++						break;
++					case SPF_NONE:
++						*spf_reject = (SPFAction > 4 ? '1' : '0');
++						break;
++					case SPF_ERROR:
++						*spf_reject = (SPFAction > 5 ? '1' : '0');
++						break;
++					case SPF_UNKNOWN:
++						*spf_reject = (SPFAction > 6 ? '1' : '0');
++						break;
++					case SPF_UNMECH:
++						break;
++				}
++
++				macdefine(&e->e_macro, A_TEMP, macid("{spfreject}"), (char *)spf_reject);
++				free(spf_reject);
++
++				if (SPFExplainState == true)
++				{
++					spf_e = SPF_get_explain(peer_info);
++					macdefine(&e->e_macro, A_TEMP, macid("{spfexplain}"), (char *)spf_e);
++					free(spf_e);
++				}
++
++				if (SPFHeaderState == true)
++				{
++					if ((spf_hdr = SPF_build_header(peer_info)) != NULL)
++					{
++						macdefine(&e->e_macro, A_TEMP, macid("{spfheader}"),
++						(char *)(spf_hdr + 14));
++						free(spf_hdr);
++					}
++				}
++			} /* if (SPFAction > 0){} */
++#endif /* LIBSPF */
++
+ 			/* Successfully set e_from, allow logging */
+ 			e->e_flags |= EF_LOGSENDER;
+ 
+ 			/* put resulting triple from parseaddr() into macros */
+@@ -3553,8 +3729,12 @@ smtp_data(smtp, e)
+ 	CurEnv = e;
+ 	newenvelope(e, e, sm_rpool_new_x(NULL));
+ 	e->e_flags = BlankEnvelope.e_flags;
+ 
++#ifdef LIBSPF
++	peer_info = SPF_close(peer_info);
++#endif /* LIBSPF */
++
+ 	/* restore connection quarantining */
+ 	if (smtp->sm_quarmsg == NULL)
+ 	{
+ 		e->e_quarmsg = NULL;
+--- sendmail-8.13.4/sendmail/readcf.c	2004-08-04 14:17:57.000000000 -0700
++++ sendmail-8.13.4.libspf/sendmail/readcf.c	2005-04-28 08:25:21.000000000 -0700
+@@ -2190,9 +2190,28 @@ static struct optioninfo
+ #if _FFR_HELONAME
+ # define O_HELONAME 0xd8
+ 	{ "HeloName",   O_HELONAME,     OI_NONE },
+ #endif /* _FFR_HELONAME */
+-
++#ifdef LIBSPF
++#define O_SPF_ACTION                    0xe0
++	{ "SPFAction",			O_SPF_ACTION,                   OI_NONE },
++#define O_SPF_HEADER_STATE              0xe1
++	{ "SPFHeaderState",		O_SPF_HEADER_STATE,             OI_NONE },
++#define O_SPF_BEST_GUESS_STATE          0xe2
++	{ "SPFBestGuessState",		O_SPF_BEST_GUESS_STATE,         OI_NONE },
++#define O_SPF_BEST_GUESS                0xe3
++	{ "SPFBestGuess",		O_SPF_BEST_GUESS,               OI_NONE },
++#define O_SPF_TRUSTED_FORWARDER_STATE   0xe4
++	{ "SPFTrustedForwarderState",	O_SPF_TRUSTED_FORWARDER_STATE,  OI_NONE },
++#define O_SPF_TRUSTED_FORWARDER         0xe5
++	{ "SPFTrustedForwarder",	O_SPF_TRUSTED_FORWARDER,        OI_NONE },
++#define O_SPF_EXPLAIN_STATE             0xe6
++	{ "SPFExplainState",		O_SPF_EXPLAIN_STATE,            OI_NONE },
++#define O_SPF_EXPLAIN                   0xe7
++	{ "SPFExplain",			O_SPF_EXPLAIN,                  OI_NONE },
++#define O_SPF_DEBUG_STATE		0xe8
++	{"SPFDebugState",		O_SPF_DEBUG_STATE,		OI_NONE },	
++#endif /* LIBSPF */
+ 	{ NULL,				'\0',		OI_NONE	}
+ };
+ 
+ # define CANONIFY(val)
+@@ -3695,8 +3714,46 @@ setoption(opt, val, safe, sticky, e)
+ 		/* silently ignored... required for cf file option */
+ #endif /* REQUIRES_DIR_FSYNC */
+ 		break;
+ 
++#ifdef LIBSPF
++	  case O_SPF_ACTION:
++	  SPFAction = atoi(val);
++	  break;
++
++	  case O_SPF_HEADER_STATE:
++	  SPFHeaderState = atobool(val);
++	  break;
++
++	  case O_SPF_BEST_GUESS_STATE:
++	  SPFBestGuessState = atoi(val);
++	  break;
++
++	  case O_SPF_BEST_GUESS:
++	  SPFBestGuess = newstr(val);
++	  break;
++
++	  case O_SPF_TRUSTED_FORWARDER_STATE:
++	  SPFTrustedForwarderState = atoi(val);
++	  break;
++
++	  case O_SPF_TRUSTED_FORWARDER:
++	  SPFTrustedForwarder = newstr(val);
++	  break;
++
++	  case O_SPF_EXPLAIN_STATE:
++	  SPFExplainState = atobool(val);
++	  break;
++
++	  case O_SPF_EXPLAIN:
++	  SPFExplain = newstr(val);
++	  break;
++
++	  case O_SPF_DEBUG_STATE:
++	  SPFDebugState = atoi(val);
++	  break;
++#endif /*LIBSPF */
++
+ 	  case O_CONNECTION_RATE_WINDOW_SIZE:
+ 		ConnectionRateWindowSize = convtime(val, 's');
+ 		break;
+ 
+--- sendmail-8.13.4/sendmail/sendmail.h	2005-03-07 10:03:17.000000000 -0800
++++ sendmail-8.13.4.libspf/sendmail/sendmail.h	2005-04-28 08:25:21.000000000 -0700
+@@ -2178,9 +2178,20 @@ EXTERN bool	SingleLineFromHeader;	/* for
+ EXTERN bool	SingleThreadDelivery;	/* single thread hosts on delivery */
+ #if _FFR_SOFT_BOUNCE
+ EXTERN bool	SoftBounce;	/* replace 5xy by 4xy (for testing) */
+ #endif /* _FFR_SOFT_BOUNCE */
+-EXTERN bool	volatile StopRequest;	/* stop sending output */
++#ifdef LIBSPF
++EXTERN int	SPFAction;		/* type of Action to take based on SPF result */
++EXTERN bool	SPFHeaderState;		/* prepend header 'Received-SPF:' or not */
++EXTERN u_int32_t SPFBestGuessState;	/* best guess support on or off */
++EXTERN char *SPFBestGuess;		/* SPF query to execute as best guess */
++EXTERN u_int32_t SPFTrustedForwarderState; /* trusted forwarder support on or off */
++EXTERN char	*SPFTrustedForwarder;	/* SPF query to execute as trusted forwarder */
++EXTERN bool	SPFExplainState;	/* provide explanations upon failures */
++EXTERN char	*SPFExplain;		/* string to expand on to generate explanations */
++EXTERN int	SPFDebugState;		/* debug level when compiled --enable-debug */
++#endif /* LIBSPF */
++EXTERN bool	volatile StopRequest;   /* stop sending output */
+ EXTERN bool	SuprErrs;	/* set if we are suppressing errors */
+ EXTERN bool	TryNullMXList;	/* if we are the best MX, try host directly */
+ EXTERN bool	UseMSP;		/* mail submission: group writable queue ok? */
+ EXTERN bool	WorkAroundBrokenAAAA;	/* some nameservers return SERVFAIL on AAAA queries */

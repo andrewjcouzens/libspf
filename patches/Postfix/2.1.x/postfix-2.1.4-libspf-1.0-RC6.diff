@@ -1,0 +1,1359 @@
+# File: libspf-1.0.0/patches/Postfix/2.1.x/postfix-2.1.4-libspf-1.0.0-RC6.diff
+# Date: 09/15/04
+# Desc: Patch for libSPF v1.0 against Postfix v2.1.4
+# 
+# Patch coder: Travis Anderson <tanderson@codeshare.ca>
+# Diff author: James Couzens <jcouzens@codeshare.ca>
+#
+# Contents: 
+#
+# diff -rpN -C4 postfix-2.1.4/include/mail_params.h postfix-2.1.4.libspf/include/mail_params.h >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/global/mail_params.h postfix-2.1.4.libspf/src/global/mail_params.h >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/smtpd/smtpd.c postfix-2.1.4.libspf/src/smtpd/smtpd.c >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/smtpd/smtpd_check.c postfix-2.1.4.libspf/src/smtpd/smtpd_check.c >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/smtpd/smtpd_state.c postfix-2.1.4.libspf/src/smtpd/smtpd_state.c >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/smtpd/Makefile postfix-2.1.4.libspf/src/smtpd/Makefile >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/src/smtpd/smtpd.h postfix-2.1.4.libspf/src/smtpd/smtpd.h >> postfix-2.1.4-libspf-1.0-RC6.diff
+# diff -rpN -C4 postfix-2.1.4/conf/spf.cf.example postfix-2.1.4.libspf/conf/spf.cf.example >> postfix-2.1.4-libspf-1.0-RC6.diff
+
+*** postfix-2.1.4/include/mail_params.h	Wed Sep 15 08:52:07 2004
+--- postfix-2.1.4.libspf/include/mail_params.h	Wed Sep 15 08:33:42 2004
+*************** extern char *var_syslog_facility;
+*** 274,282 ****
+  extern char *var_always_bcc;
+  
+   /*
+    * What to put in the To: header when no recipients were disclosed.
+!   * 
+    * XXX 2822: When no recipient headers remain, a system should insert a Bcc:
+    * header without additional information. That is not so great given that
+    * MTAs routinely strip Bcc: headers from message headers.
+    */
+--- 274,282 ----
+  extern char *var_always_bcc;
+  
+   /*
+    * What to put in the To: header when no recipients were disclosed.
+!   *
+    * XXX 2822: When no recipient headers remain, a system should insert a Bcc:
+    * header without additional information. That is not so great given that
+    * MTAs routinely strip Bcc: headers from message headers.
+    */
+*************** extern int var_hash_queue_depth;
+*** 747,755 ****
+    * SMTP client. Timeouts inspired by RFC 1123. The SMTP recipient limit
+    * determines how many recipient addresses the SMTP client sends along with
+    * each message. Unfortunately, some mailers misbehave and disconnect (smap)
+    * when given more recipients than they are willing to handle.
+!   * 
+    * XXX 2821: A mail system is supposed to use EHLO instead of HELO, and to fall
+    * back to HELO if EHLO is not supported.
+    */
+  #define VAR_BESTMX_TRANSP	"best_mx_transport"
+--- 747,755 ----
+    * SMTP client. Timeouts inspired by RFC 1123. The SMTP recipient limit
+    * determines how many recipient addresses the SMTP client sends along with
+    * each message. Unfortunately, some mailers misbehave and disconnect (smap)
+    * when given more recipients than they are willing to handle.
+!   *
+    * XXX 2821: A mail system is supposed to use EHLO instead of HELO, and to fall
+    * back to HELO if EHLO is not supported.
+    */
+  #define VAR_BESTMX_TRANSP	"best_mx_transport"
+*************** extern char *var_smtp_sasl_passwd;
+*** 944,951 ****
+--- 944,988 ----
+  #define VAR_SMTP_SASL_OPTS	"smtp_sasl_security_options"
+  #define DEF_SMTP_SASL_OPTS	"noplaintext, noanonymous"
+  extern char *var_smtp_sasl_opts;
+  
++ /*
++  * LIBSPF support
++  */
++ #define REJECT_SPF                              "reject_spf"
++ 
++ #define VAR_SPF_ACTION                          "spf_action"
++ #define DEF_SPF_ACTION                          1
++ extern int var_spf_action;
++ 
++ #define VAR_SPF_DO_PREPEND_HEADER               "spf_do_prepend_header"
++ #define DEF_SPF_DO_PREPEND_HEADER               1
++ extern bool var_spf_do_prepend_header;
++ 
++ #define VAR_SPF_DO_EXPLAIN                      "spf_do_explain"
++ #define DEF_SPF_DO_EXPLAIN                      0
++ extern bool var_spf_do_explain;
++ 
++ #define VAR_SPF_DO_USE_BEST_GUESS_RECORD        "spf_do_use_best_guess_record"
++ #define DEF_SPF_DO_USE_BEST_GUESS_RECORD        0
++ extern bool var_spf_do_use_best_guess_record;
++ 
++ #define VAR_SPF_DO_USE_TRUSTED_FORWARDER        "spf_do_use_trusted_forwarder"
++ #define DEF_SPF_DO_USE_TRUSTED_FORWARDER        0
++ extern bool var_spf_do_use_trusted_forwarder;
++ 
++ #define VAR_SPF_CUSTOM_EXPLANATION              "spf_custom_explanation"
++ #define DEF_SPF_CUSTOM_EXPLANATION              ""
++ extern char *var_spf_custom_explanation;
++ 
++ #define VAR_SPF_CUSTOM_BEST_GUESS_RECORD        "spf_custom_best_guess_record"
++ #define DEF_SPF_CUSTOM_BEST_GUESS_RECORD        ""
++ extern char *var_spf_custom_best_guess_record;
++ 
++ #define VAR_SPF_CUSTOM_TRUSTED_FORWARDER        "spf_custom_trusted_forwarder"
++ #define DEF_SPF_CUSTOM_TRUSTED_FORWARDER        ""
++ extern char *var_spf_custom_trusted_forwarder;
++ 
+   /*
+    * LMTP server. The soft error limit determines how many errors an LMTP
+    * client may make before we start to slow down; the hard error limit
+    * determines after how many client errors we disconnect.
+*** postfix-2.1.4/src/global/mail_params.h	Wed Apr 21 11:56:04 2004
+--- postfix-2.1.4.libspf/src/global/mail_params.h	Wed Sep 15 08:19:42 2004
+*************** extern char *var_syslog_facility;
+*** 274,282 ****
+  extern char *var_always_bcc;
+  
+   /*
+    * What to put in the To: header when no recipients were disclosed.
+!   * 
+    * XXX 2822: When no recipient headers remain, a system should insert a Bcc:
+    * header without additional information. That is not so great given that
+    * MTAs routinely strip Bcc: headers from message headers.
+    */
+--- 274,282 ----
+  extern char *var_always_bcc;
+  
+   /*
+    * What to put in the To: header when no recipients were disclosed.
+!   *
+    * XXX 2822: When no recipient headers remain, a system should insert a Bcc:
+    * header without additional information. That is not so great given that
+    * MTAs routinely strip Bcc: headers from message headers.
+    */
+*************** extern int var_hash_queue_depth;
+*** 747,755 ****
+    * SMTP client. Timeouts inspired by RFC 1123. The SMTP recipient limit
+    * determines how many recipient addresses the SMTP client sends along with
+    * each message. Unfortunately, some mailers misbehave and disconnect (smap)
+    * when given more recipients than they are willing to handle.
+!   * 
+    * XXX 2821: A mail system is supposed to use EHLO instead of HELO, and to fall
+    * back to HELO if EHLO is not supported.
+    */
+  #define VAR_BESTMX_TRANSP	"best_mx_transport"
+--- 747,755 ----
+    * SMTP client. Timeouts inspired by RFC 1123. The SMTP recipient limit
+    * determines how many recipient addresses the SMTP client sends along with
+    * each message. Unfortunately, some mailers misbehave and disconnect (smap)
+    * when given more recipients than they are willing to handle.
+!   *
+    * XXX 2821: A mail system is supposed to use EHLO instead of HELO, and to fall
+    * back to HELO if EHLO is not supported.
+    */
+  #define VAR_BESTMX_TRANSP	"best_mx_transport"
+*************** extern char *var_smtp_sasl_passwd;
+*** 944,951 ****
+--- 944,988 ----
+  #define VAR_SMTP_SASL_OPTS	"smtp_sasl_security_options"
+  #define DEF_SMTP_SASL_OPTS	"noplaintext, noanonymous"
+  extern char *var_smtp_sasl_opts;
+  
++ /*
++  * LIBSPF support
++  */
++ #define REJECT_SPF                              "reject_spf"
++ 
++ #define VAR_SPF_ACTION                          "spf_action"
++ #define DEF_SPF_ACTION                          1
++ extern int var_spf_action;
++ 
++ #define VAR_SPF_DO_PREPEND_HEADER               "spf_do_prepend_header"
++ #define DEF_SPF_DO_PREPEND_HEADER               1
++ extern bool var_spf_do_prepend_header;
++ 
++ #define VAR_SPF_DO_EXPLAIN                      "spf_do_explain"
++ #define DEF_SPF_DO_EXPLAIN                      0
++ extern bool var_spf_do_explain;
++ 
++ #define VAR_SPF_DO_USE_BEST_GUESS_RECORD        "spf_do_use_best_guess_record"
++ #define DEF_SPF_DO_USE_BEST_GUESS_RECORD        0
++ extern bool var_spf_do_use_best_guess;
++ 
++ #define VAR_SPF_DO_USE_TRUSTED_FORWARDER        "spf_do_use_trusted_forwarder"
++ #define DEF_SPF_DO_USE_TRUSTED_FORWARDER        0
++ extern bool var_spf_do_use_trusted_forwarder;
++ 
++ #define VAR_SPF_CUSTOM_EXPLANATION              "spf_custom_explanation"
++ #define DEF_SPF_CUSTOM_EXPLANATION              ""
++ extern char *var_spf_custom_explanation;
++ 
++ #define VAR_SPF_CUSTOM_BEST_GUESS_RECORD        "spf_custom_best_guess_record"
++ #define DEF_SPF_CUSTOM_BEST_GUESS_RECORD        ""
++ extern char *var_spf_custom_guess_record;
++ 
++ #define VAR_SPF_CUSTOM_TRUSTED_FORWARDER        "spf_custom_trusted_forwarder"
++ #define DEF_SPF_CUSTOM_TRUSTED_FORWARDER        ""
++ extern char *var_spf_custom_trusted_forwarder;
++ 
+   /*
+    * LMTP server. The soft error limit determines how many errors an LMTP
+    * client may make before we start to slow down; the hard error limit
+    * determines after how many client errors we disconnect.
+*** postfix-2.1.4/src/smtpd/smtpd.c	Wed Jun 16 15:40:36 2004
+--- postfix-2.1.4.libspf/src/smtpd/smtpd.c	Sat Sep 11 12:48:53 2004
+*************** char   *var_xclient_hosts;
+*** 754,761 ****
+--- 754,771 ----
+  char   *var_xforward_hosts;
+  bool    var_smtpd_rej_unl_from;
+  bool    var_smtpd_rej_unl_rcpt;
+  
++ /* LibSPF vars */
++ int     var_spf_action;
++ bool    var_spf_do_prepend_header;
++ bool    var_spf_do_explain;
++ bool    var_spf_do_use_best_guess_record;
++ bool    var_spf_do_use_trusted_forwarder;
++ char   *var_spf_custom_explanation;
++ char   *var_spf_custom_best_guess_record;
++ char   *var_spf_custom_trusted_forwarder;
++ 
+  #ifdef SNAPSHOT
+  int     var_smtpd_crate_limit;
+  int     var_smtpd_cconn_limit;
+  char   *var_smtpd_hoggers;
+*************** static void mail_open_stream(SMTPD_STATE
+*** 984,992 ****
+      /*
+       * XXX 2821: An SMTP server is not allowed to "clean up" mail except in
+       * the case of original submissions. Presently, Postfix always runs all
+       * mail through the cleanup server.
+!      * 
+       * We could approximate the RFC as follows: Postfix rewrites mail if it
+       * comes from a source that we are willing to relay for. This way, we
+       * avoid rewriting most mail that comes from elsewhere. However, that
+       * requires moving functionality away from the cleanup daemon elsewhere,
+--- 994,1002 ----
+      /*
+       * XXX 2821: An SMTP server is not allowed to "clean up" mail except in
+       * the case of original submissions. Presently, Postfix always runs all
+       * mail through the cleanup server.
+!      *
+       * We could approximate the RFC as follows: Postfix rewrites mail if it
+       * comes from a source that we are willing to relay for. This way, we
+       * avoid rewriting most mail that comes from elsewhere. However, that
+       * requires moving functionality away from the cleanup daemon elsewhere,
+*************** static char *extract_addr(SMTPD_STATE *s
+*** 1092,1104 ****
+      /*
+       * Some mailers send RFC822-style address forms (with comments and such)
+       * in SMTP envelopes. We cannot blame users for this: the blame is with
+       * programmers violating the RFC, and with sendmail for being permissive.
+!      * 
+       * XXX The SMTP command tokenizer must leave the address in externalized
+       * (quoted) form, so that the address parser can correctly extract the
+       * address from surrounding junk.
+!      * 
+       * XXX We have only one address parser, written according to the rules of
+       * RFC 822. That standard differs subtly from RFC 821.
+       */
+      if (msg_verbose)
+--- 1102,1114 ----
+      /*
+       * Some mailers send RFC822-style address forms (with comments and such)
+       * in SMTP envelopes. We cannot blame users for this: the blame is with
+       * programmers violating the RFC, and with sendmail for being permissive.
+!      *
+       * XXX The SMTP command tokenizer must leave the address in externalized
+       * (quoted) form, so that the address parser can correctly extract the
+       * address from surrounding junk.
+!      *
+       * XXX We have only one address parser, written according to the rules of
+       * RFC 822. That standard differs subtly from RFC 821.
+       */
+      if (msg_verbose)
+*************** static int mail_cmd(SMTPD_STATE *state, 
+*** 1191,1199 ****
+      state->encoding = 0;
+  
+      /*
+       * Sanity checks.
+!      * 
+       * XXX 2821 pedantism: Section 4.1.2 says that SMTP servers that receive a
+       * command in which invalid character codes have been employed, and for
+       * which there are no other reasons for rejection, MUST reject that
+       * command with a 501 response. So much for the principle of "be liberal
+--- 1201,1209 ----
+      state->encoding = 0;
+  
+      /*
+       * Sanity checks.
+!      *
+       * XXX 2821 pedantism: Section 4.1.2 says that SMTP servers that receive a
+       * command in which invalid character codes have been employed, and for
+       * which there are no other reasons for rejection, MUST reject that
+       * command with a 501 response. So much for the principle of "be liberal
+*************** static int rcpt_cmd(SMTPD_STATE *state, 
+*** 1385,1393 ****
+      char   *arg;
+  
+      /*
+       * Sanity checks.
+!      * 
+       * XXX 2821 pedantism: Section 4.1.2 says that SMTP servers that receive a
+       * command in which invalid character codes have been employed, and for
+       * which there are no other reasons for rejection, MUST reject that
+       * command with a 501 response. So much for the principle of "be liberal
+--- 1395,1403 ----
+      char   *arg;
+  
+      /*
+       * Sanity checks.
+!      *
+       * XXX 2821 pedantism: Section 4.1.2 says that SMTP servers that receive a
+       * command in which invalid character codes have been employed, and for
+       * which there are no other reasons for rejection, MUST reject that
+       * command with a 501 response. So much for the principle of "be liberal
+*************** static int rcpt_cmd(SMTPD_STATE *state, 
+*** 1476,1484 ****
+      }
+  
+      /*
+       * Store the recipient. Remember the first one.
+!      * 
+       * Flush recipients to maintain a stiffer coupling with the next stage and
+       * to better utilize parallelism.
+       */
+      state->rcpt_count++;
+--- 1486,1494 ----
+      }
+  
+      /*
+       * Store the recipient. Remember the first one.
+!      *
+       * Flush recipients to maintain a stiffer coupling with the next stage and
+       * to better utilize parallelism.
+       */
+      state->rcpt_count++;
+*************** static int data_cmd(SMTPD_STATE *state, 
+*** 1572,1580 ****
+      /*
+       * Flush out any access table actions that are delegated to the cleanup
+       * server, and that may trigger before we accept the first valid
+       * recipient.
+!      * 
+       * Terminate the message envelope segment. Start the message content
+       * segment, and prepend our own Received: header. If there is only one
+       * recipient, list the recipient address.
+       */
+--- 1582,1590 ----
+      /*
+       * Flush out any access table actions that are delegated to the cleanup
+       * server, and that may trigger before we accept the first valid
+       * recipient.
+!      *
+       * Terminate the message envelope segment. Start the message content
+       * segment, and prepend our own Received: header. If there is only one
+       * recipient, list the recipient address.
+       */
+*************** static int data_cmd(SMTPD_STATE *state, 
+*** 1633,1645 ****
+      /*
+       * Copy the message content. If the cleanup process has a problem, keep
+       * reading until the remote stops sending, then complain. Produce typed
+       * records from the SMTP stream so we can handle data that spans buffers.
+!      * 
+       * XXX Force an empty record when the queue file content begins with
+       * whitespace, so that it won't be considered as being part of our own
+       * Received: header. What an ugly Kluge.
+!      * 
+       * XXX Deal with UNIX-style From_ lines at the start of message content
+       * because sendmail permits it.
+       */
+      for (prev_rec_type = 0; /* void */ ; prev_rec_type = curr_rec_type) {
+--- 1643,1655 ----
+      /*
+       * Copy the message content. If the cleanup process has a problem, keep
+       * reading until the remote stops sending, then complain. Produce typed
+       * records from the SMTP stream so we can handle data that spans buffers.
+!      *
+       * XXX Force an empty record when the queue file content begins with
+       * whitespace, so that it won't be considered as being part of our own
+       * Received: header. What an ugly Kluge.
+!      *
+       * XXX Deal with UNIX-style From_ lines at the start of message content
+       * because sendmail permits it.
+       */
+      for (prev_rec_type = 0; /* void */ ; prev_rec_type = curr_rec_type) {
+*************** static int data_cmd(SMTPD_STATE *state, 
+*** 1652,1659 ****
+--- 1662,1683 ----
+  	if (first) {
+  	    if (strncmp(start + strspn(start, ">"), "From ", 5) == 0) {
+  		out_fprintf(out_stream, curr_rec_type,
+  			    "X-Mailbox-Line: %s", start);
++ 
++ #ifdef USE_LIBSPF
++ 		/* LibSPF: If we're giving an explanation, we want to output
++ 		   it at the very start of DATA
++ 		*/
++ 		if (state->spf_explanation != NULL) {
++ 		    out_fprintf(out_stream, curr_rec_type,
++ 		                state->spf_explanation);
++ 
++ 		    /* make sure we leave nothing behind */
++ 		    free(state->spf_explanation);
++ 		    state->spf_explanation = NULL;
++ 		}
++ #endif
+  		continue;
+  	    }
+  	    first = 0;
+  	    if (len > 0 && IS_SPACE_TAB(start[0]))
+*************** static int data_cmd(SMTPD_STATE *state, 
+*** 1669,1677 ****
+  
+      /*
+       * Send the end of DATA and finish the proxy connection. Set the
+       * CLEANUP_STAT_PROXY error flag in case of trouble.
+!      * 
+       * XXX The low-level proxy output routines should set "state" error
+       * attributes. This requires making "state" a context attribute of the
+       * VSTREAM.
+       */
+--- 1693,1701 ----
+  
+      /*
+       * Send the end of DATA and finish the proxy connection. Set the
+       * CLEANUP_STAT_PROXY error flag in case of trouble.
+!      *
+       * XXX The low-level proxy output routines should set "state" error
+       * attributes. This requires making "state" a context attribute of the
+       * VSTREAM.
+       */
+*************** static int data_cmd(SMTPD_STATE *state, 
+*** 1711,1719 ****
+      /*
+       * Handle any errors. One message may suffer from multiple errors, so
+       * complain only about the most severe error. Forgive any previous client
+       * errors when a message was received successfully.
+!      * 
+       * See also: qmqpd.c
+       */
+      if (state->err == CLEANUP_STAT_OK) {
+  	state->error_count = 0;
+--- 1735,1743 ----
+      /*
+       * Handle any errors. One message may suffer from multiple errors, so
+       * complain only about the most severe error. Forgive any previous client
+       * errors when a message was received successfully.
+!      *
+       * See also: qmqpd.c
+       */
+      if (state->err == CLEANUP_STAT_OK) {
+  	state->error_count = 0;
+*************** static int noop_cmd(SMTPD_STATE *state, 
+*** 1800,1808 ****
+      /*
+       * XXX 2821 incompatibility: Section 4.1.1.9 says that NOOP can have a
+       * parameter string which is to be ignored. NOOP instructions with
+       * parameters? Go figure.
+!      * 
+       * RFC 2821 violates RFC 821, which says that NOOP takes no parameters.
+       */
+  #ifdef RFC821_SYNTAX
+  
+--- 1824,1832 ----
+      /*
+       * XXX 2821 incompatibility: Section 4.1.1.9 says that NOOP can have a
+       * parameter string which is to be ignored. NOOP instructions with
+       * parameters? Go figure.
+!      *
+       * RFC 2821 violates RFC 821, which says that NOOP takes no parameters.
+       */
+  #ifdef RFC821_SYNTAX
+  
+*************** static int vrfy_cmd(SMTPD_STATE *state, 
+*** 1828,1847 ****
+      /*
+       * The SMTP standard (RFC 821) disallows unquoted special characters in
+       * the VRFY argument. Common practice violates the standard, however.
+       * Postfix accomodates common practice where it violates the standard.
+!      * 
+       * XXX Impedance mismatch! The SMTP command tokenizer preserves quoting,
+       * whereas the recipient restrictions checks expect unquoted (internal)
+       * address forms. Therefore we must parse out the address, or we must
+       * stop doing recipient restriction checks and lose the opportunity to
+       * say "user unknown" at the SMTP port.
+!      * 
+       * XXX 2821 incompatibility and brain damage: Section 4.5.1 requires that
+       * VRFY is implemented. RFC 821 specifies that VRFY is optional. It gets
+       * even worse: section 3.5.3 says that a 502 (command recognized but not
+       * implemented) reply is not fully compliant.
+!      * 
+       * Thus, an RFC 2821 compliant implementation cannot refuse to supply
+       * information in reply to VRFY queries. That is simply bogus. The only
+       * reply we could supply is a generic 252 reply. This causes spammers to
+       * add tons of bogus addresses to their mailing lists (spam harvesting by
+--- 1852,1871 ----
+      /*
+       * The SMTP standard (RFC 821) disallows unquoted special characters in
+       * the VRFY argument. Common practice violates the standard, however.
+       * Postfix accomodates common practice where it violates the standard.
+!      *
+       * XXX Impedance mismatch! The SMTP command tokenizer preserves quoting,
+       * whereas the recipient restrictions checks expect unquoted (internal)
+       * address forms. Therefore we must parse out the address, or we must
+       * stop doing recipient restriction checks and lose the opportunity to
+       * say "user unknown" at the SMTP port.
+!      *
+       * XXX 2821 incompatibility and brain damage: Section 4.5.1 requires that
+       * VRFY is implemented. RFC 821 specifies that VRFY is optional. It gets
+       * even worse: section 3.5.3 says that a 502 (command recognized but not
+       * implemented) reply is not fully compliant.
+!      *
+       * Thus, an RFC 2821 compliant implementation cannot refuse to supply
+       * information in reply to VRFY queries. That is simply bogus. The only
+       * reply we could supply is a generic 252 reply. This causes spammers to
+       * add tons of bogus addresses to their mailing lists (spam harvesting by
+*************** static int vrfy_cmd(SMTPD_STATE *state, 
+*** 1876,1884 ****
+       * XXX 2821 new feature: Section 3.5.1 requires that the VRFY response is
+       * either "full name <user@domain>" or "user@domain". Postfix replies
+       * with the address that was provided by the client, whether or not it is
+       * in fully qualified domain form or not.
+!      * 
+       * Reply code 250 is reserved for the case where the address is verified;
+       * reply code 252 should be used when no definitive certainty exists.
+       */
+      smtpd_chat_reply(state, "252 %s", argv[1].strval);
+--- 1900,1908 ----
+       * XXX 2821 new feature: Section 3.5.1 requires that the VRFY response is
+       * either "full name <user@domain>" or "user@domain". Postfix replies
+       * with the address that was provided by the client, whether or not it is
+       * in fully qualified domain form or not.
+!      *
+       * Reply code 250 is reserved for the case where the address is verified;
+       * reply code 252 should be used when no definitive certainty exists.
+       */
+      smtpd_chat_reply(state, "252 %s", argv[1].strval);
+*************** static void smtpd_proto(SMTPD_STATE *sta
+*** 2368,2382 ****
+       * Print a greeting banner and run the state machine. Read SMTP commands
+       * one line at a time. According to the standard, a sender or recipient
+       * address could contain an escaped newline. I think this is perverse,
+       * and anyone depending on this is really asking for trouble.
+!      * 
+       * In case of mail protocol trouble, the program jumps back to this place,
+       * so that it can perform the necessary cleanup before talking to the
+       * next client. The setjmp/longjmp primitives are like a sharp tool: use
+       * with care. I would certainly recommend against the use of
+       * setjmp/longjmp in programs that change privilege levels.
+!      * 
+       * In case of file system trouble the program terminates after logging the
+       * error and after informing the client. In all other cases (out of
+       * memory, panic) the error is logged, and the msg_cleanup() exit handler
+       * cleans up, but no attempt is made to inform the client of the nature
+--- 2392,2406 ----
+       * Print a greeting banner and run the state machine. Read SMTP commands
+       * one line at a time. According to the standard, a sender or recipient
+       * address could contain an escaped newline. I think this is perverse,
+       * and anyone depending on this is really asking for trouble.
+!      *
+       * In case of mail protocol trouble, the program jumps back to this place,
+       * so that it can perform the necessary cleanup before talking to the
+       * next client. The setjmp/longjmp primitives are like a sharp tool: use
+       * with care. I would certainly recommend against the use of
+       * setjmp/longjmp in programs that change privilege levels.
+!      *
+       * In case of file system trouble the program terminates after logging the
+       * error and after informing the client. In all other cases (out of
+       * memory, panic) the error is logged, and the msg_cleanup() exit handler
+       * cleans up, but no attempt is made to inform the client of the nature
+*************** static void smtpd_service(VSTREAM *strea
+*** 2552,2560 ****
+  
+      /*
+       * This routine runs when a client has connected to our network port, or
+       * when the smtp server is run in stand-alone mode (input from pipe).
+!      * 
+       * Look up and sanitize the peer name, then initialize some connection-
+       * specific state. When the name service is hosed, hostname lookup will
+       * take a while. This is why I always run a local name server on critical
+       * machines.
+--- 2576,2584 ----
+  
+      /*
+       * This routine runs when a client has connected to our network port, or
+       * when the smtp server is run in stand-alone mode (input from pipe).
+!      *
+       * Look up and sanitize the peer name, then initialize some connection-
+       * specific state. When the name service is hosed, hostname lookup will
+       * take a while. This is why I always run a local name server on critical
+       * machines.
+*************** int     main(int argc, char **argv)
+*** 2706,2713 ****
+--- 2730,2741 ----
+  	VAR_VIRT_ALIAS_CODE, DEF_VIRT_ALIAS_CODE, &var_virt_alias_code, 0, 0,
+  	VAR_VIRT_MAILBOX_CODE, DEF_VIRT_MAILBOX_CODE, &var_virt_mailbox_code, 0, 0,
+  	VAR_RELAY_RCPT_CODE, DEF_RELAY_RCPT_CODE, &var_relay_rcpt_code, 0, 0,
+  	VAR_VERIFY_POLL_COUNT, DEF_VERIFY_POLL_COUNT, &var_verify_poll_count, 1, 0,
++ 
++ 	/* LibSPF vars */
++ 	VAR_SPF_ACTION, DEF_SPF_ACTION, &var_spf_action, 0, 7,
++ 
+  #ifdef SNAPSHOT
+  	VAR_SMTPD_CRATE_LIMIT, DEF_SMTPD_CRATE_LIMIT, &var_smtpd_crate_limit, 0, 0,
+  	VAR_SMTPD_CCONN_LIMIT, DEF_SMTPD_CCONN_LIMIT, &var_smtpd_cconn_limit, 0, 0,
+  #endif
+*************** int     main(int argc, char **argv)
+*** 2733,2740 ****
+--- 2761,2774 ----
+  	VAR_BROKEN_AUTH_CLNTS, DEF_BROKEN_AUTH_CLNTS, &var_broken_auth_clients,
+  	VAR_SHOW_UNK_RCPT_TABLE, DEF_SHOW_UNK_RCPT_TABLE, &var_show_unk_rcpt_table,
+  	VAR_SMTPD_REJ_UNL_FROM, DEF_SMTPD_REJ_UNL_FROM, &var_smtpd_rej_unl_from,
+  	VAR_SMTPD_REJ_UNL_RCPT, DEF_SMTPD_REJ_UNL_RCPT, &var_smtpd_rej_unl_rcpt,
++ 
++ 	/* LibSPF vars */
++ 	VAR_SPF_DO_PREPEND_HEADER, DEF_SPF_DO_PREPEND_HEADER, &var_spf_do_prepend_header,
++ 	VAR_SPF_DO_EXPLAIN, DEF_SPF_DO_EXPLAIN, &var_spf_do_explain,
++ 	VAR_SPF_DO_USE_BEST_GUESS_RECORD, DEF_SPF_DO_USE_BEST_GUESS_RECORD, &var_spf_do_use_best_guess_record,
++ 	VAR_SPF_DO_USE_TRUSTED_FORWARDER, DEF_SPF_DO_USE_TRUSTED_FORWARDER, &var_spf_do_use_trusted_forwarder,
+  	0,
+      };
+      static CONFIG_STR_TABLE str_table[] = {
+  	VAR_SMTPD_BANNER, DEF_SMTPD_BANNER, &var_smtpd_banner, 1, 0,
+*************** int     main(int argc, char **argv)
+*** 2771,2778 ****
+--- 2805,2818 ----
+  	VAR_SMTPD_PROXY_EHLO, DEF_SMTPD_PROXY_EHLO, &var_smtpd_proxy_ehlo, 0, 0,
+  	VAR_INPUT_TRANSP, DEF_INPUT_TRANSP, &var_input_transp, 0, 0,
+  	VAR_XCLIENT_HOSTS, DEF_XCLIENT_HOSTS, &var_xclient_hosts, 0, 0,
+  	VAR_XFORWARD_HOSTS, DEF_XFORWARD_HOSTS, &var_xforward_hosts, 0, 0,
++ 
++ 	/* LibSPF vars */
++ 	VAR_SPF_CUSTOM_EXPLANATION, DEF_SPF_CUSTOM_EXPLANATION, &var_spf_custom_explanation, 0, 0,
++ 	VAR_SPF_CUSTOM_BEST_GUESS_RECORD, DEF_SPF_CUSTOM_BEST_GUESS_RECORD, &var_spf_custom_best_guess_record, 0, 0,
++ 	VAR_SPF_CUSTOM_TRUSTED_FORWARDER, DEF_SPF_CUSTOM_TRUSTED_FORWARDER, &var_spf_custom_trusted_forwarder, 0, 0,
++ 
+  #ifdef SNAPSHOT
+  	VAR_SMTPD_HOGGERS, DEF_SMTPD_HOGGERS, &var_smtpd_hoggers, 0, 0,
+  #endif
+  	0,
+*** postfix-2.1.4/src/smtpd/smtpd_check.c	Mon May  3 08:40:13 2004
+--- postfix-2.1.4.libspf/src/smtpd/smtpd_check.c	Sat Sep 11 12:47:17 2004
+***************
+*** 207,214 ****
+--- 207,218 ----
+  #include <is_header.h>
+  
+  /* Application-specific. */
+  
++ #ifdef USE_LIBSPF
++ #include <spf.h>
++ #endif /* USE_LIBSPF */
++ 
+  #include "smtpd.h"
+  #include "smtpd_sasl_glue.h"
+  #include "smtpd_check.h"
+  
+*************** static int check_rcpt_maps(SMTPD_STATE *
+*** 324,348 ****
+  
+   /*
+    * If some decision can't be made due to a temporary error, then change
+    * other decisions into deferrals.
+!   * 
+    * XXX Deferrals can be postponed only with restrictions that are based on
+    * client-specified information: this restricts their use to parameters
+    * given in HELO, MAIL FROM, RCPT TO commands.
+!   * 
+    * XXX Deferrals must not be postponed after client hostname lookup failure.
+    * The reason is that the effect of access tables may depend on whether a
+    * client hostname is available or not. Thus, the reject_unknown_client
+    * restriction must defer immediately when lookup fails, otherwise incorrect
+    * results happen with:
+!   * 
+    * reject_unknown_client, hostname-based white-list, reject
+!   * 
+    * XXX With warn_if_reject, don't raise the defer_if_permit flag when a
+    * reject-style restriction fails. Instead, log the warning for the
+    * resulting defer message.
+!   * 
+    * XXX With warn_if_reject, do raise the defer_if_reject flag when a
+    * permit-style restriction fails. Otherwise, we could reject legitimate
+    * mail.
+    */
+--- 328,352 ----
+  
+   /*
+    * If some decision can't be made due to a temporary error, then change
+    * other decisions into deferrals.
+!   *
+    * XXX Deferrals can be postponed only with restrictions that are based on
+    * client-specified information: this restricts their use to parameters
+    * given in HELO, MAIL FROM, RCPT TO commands.
+!   *
+    * XXX Deferrals must not be postponed after client hostname lookup failure.
+    * The reason is that the effect of access tables may depend on whether a
+    * client hostname is available or not. Thus, the reject_unknown_client
+    * restriction must defer immediately when lookup fails, otherwise incorrect
+    * results happen with:
+!   *
+    * reject_unknown_client, hostname-based white-list, reject
+!   *
+    * XXX With warn_if_reject, don't raise the defer_if_permit flag when a
+    * reject-style restriction fails. Instead, log the warning for the
+    * resulting defer message.
+!   *
+    * XXX With warn_if_reject, do raise the defer_if_reject flag when a
+    * permit-style restriction fails. Otherwise, we could reject legitimate
+    * mail.
+    */
+*************** static int smtpd_check_reject(SMTPD_STAT
+*** 757,776 ****
+      }
+  
+      /*
+       * Soft bounce safety net.
+!      * 
+       * XXX The code below also appears in the Postfix SMTP server reply output
+       * routine. It is duplicated here in order to avoid discrepancies between
+       * the reply codes that are shown in "reject" logging and the reply codes
+       * that are actually sent to the SMTP client.
+!      * 
+       * Implementing the soft_bounce safety net in the SMTP server reply output
+       * routine has the advantage that it covers all 5xx replies, including
+       * SMTP protocol or syntax errors, which makes soft_bounce great for
+       * non-destructive tests (especially by people who are paranoid about
+       * losing mail).
+!      * 
+       * We could eliminate the code duplication and implement the soft_bounce
+       * safety net only in the code below. But then the safety net would cover
+       * the UCE restrictions only. This would be at odds with documentation
+       * which says soft_bounce changes all 5xx replies into 4xx ones.
+--- 761,780 ----
+      }
+  
+      /*
+       * Soft bounce safety net.
+!      *
+       * XXX The code below also appears in the Postfix SMTP server reply output
+       * routine. It is duplicated here in order to avoid discrepancies between
+       * the reply codes that are shown in "reject" logging and the reply codes
+       * that are actually sent to the SMTP client.
+!      *
+       * Implementing the soft_bounce safety net in the SMTP server reply output
+       * routine has the advantage that it covers all 5xx replies, including
+       * SMTP protocol or syntax errors, which makes soft_bounce great for
+       * non-destructive tests (especially by people who are paranoid about
+       * losing mail).
+!      *
+       * We could eliminate the code duplication and implement the soft_bounce
+       * safety net only in the code below. But then the safety net would cover
+       * the UCE restrictions only. This would be at odds with documentation
+       * which says soft_bounce changes all 5xx replies into 4xx ones.
+*************** static char *dup_if_truncate(char *name)
+*** 874,882 ****
+      char   *result;
+  
+      /*
+       * Truncate hostnames ending in dot but not dot-dot.
+!      * 
+       * XXX This should not be distributed all over the code. Problem is,
+       * addresses can enter the system via multiple paths: networks, local
+       * forward/alias/include files, even as the result of address rewriting.
+       */
+--- 878,886 ----
+      char   *result;
+  
+      /*
+       * Truncate hostnames ending in dot but not dot-dot.
+!      *
+       * XXX This should not be distributed all over the code. Problem is,
+       * addresses can enter the system via multiple paths: networks, local
+       * forward/alias/include files, even as the result of address rewriting.
+       */
+*************** static int not_in_client_helo(SMTPD_STAT
+*** 1644,1652 ****
+       * immediately, outside any particular mail transaction context. For
+       * example, rejecting HELO does not affect subsequent mail deliveries.
+       * Thus, if delay_reject=no, client and helo actions such as FILTER or
+       * HOLD also should not affect subsequent mail deliveries. Hmm...
+!      * 
+       * XXX If the MAIL FROM command is rejected then we have to reset access
+       * map side effects such as FILTER.
+       */
+      if (state->sender == 0) {
+--- 1648,1656 ----
+       * immediately, outside any particular mail transaction context. For
+       * example, rejecting HELO does not affect subsequent mail deliveries.
+       * Thus, if delay_reject=no, client and helo actions such as FILTER or
+       * HOLD also should not affect subsequent mail deliveries. Hmm...
+!      *
+       * XXX If the MAIL FROM command is rejected then we have to reset access
+       * map side effects such as FILTER.
+       */
+      if (state->sender == 0) {
+*************** static int check_table_result(SMTPD_STAT
+*** 1878,1886 ****
+       * Unfortunately, maps must be declared ahead of time so they can be
+       * opened before we go to jail. We could insist that the RHS can only
+       * contain a pre-defined restriction class name, but that would be too
+       * restrictive. Instead we warn if an access table references any map.
+!      * 
+       * XXX Don't use passwd files or address rewriting maps as access tables.
+       */
+      if (strchr(value, ':') != 0) {
+  	msg_warn("SMTPD access map %s has entry with lookup table: %s",
+--- 1882,1890 ----
+       * Unfortunately, maps must be declared ahead of time so they can be
+       * opened before we go to jail. We could insist that the RHS can only
+       * contain a pre-defined restriction class name, but that would be too
+       * restrictive. Instead we warn if an access table references any map.
+!      *
+       * XXX Don't use passwd files or address rewriting maps as access tables.
+       */
+      if (strchr(value, ':') != 0) {
+  	msg_warn("SMTPD access map %s has entry with lookup table: %s",
+*************** static int check_table_result(SMTPD_STAT
+*** 1904,1912 ****
+      /*
+       * Recursively evaluate the restrictions given in the right-hand side. In
+       * the dark ages, an empty right-hand side meant OK. Make some
+       * discouraging comments.
+!      * 
+       * XXX Jump some hoops to avoid a minute memory leak in case of a file
+       * configuration error.
+       */
+  #define ADDROF(x) ((char *) &(x))
+--- 1908,1916 ----
+      /*
+       * Recursively evaluate the restrictions given in the right-hand side. In
+       * the dark ages, an empty right-hand side meant OK. Make some
+       * discouraging comments.
+!      *
+       * XXX Jump some hoops to avoid a minute memory leak in case of a file
+       * configuration error.
+       */
+  #define ADDROF(x) ((char *) &(x))
+*************** static int check_domain_access(SMTPD_STA
+*** 1985,1993 ****
+  	msg_info("%s: %s", myname, domain);
+  
+      /*
+       * Try the name and its parent domains. Including top-level domains.
+!      * 
+       * Helo names can end in ".". The test below avoids lookups of the empty
+       * key, because Berkeley DB cannot deal with it. [Victor Duchovni, Morgan
+       * Stanley].
+       */
+--- 1989,1997 ----
+  	msg_info("%s: %s", myname, domain);
+  
+      /*
+       * Try the name and its parent domains. Including top-level domains.
+!      *
+       * Helo names can end in ".". The test below avoids lookups of the empty
+       * key, because Berkeley DB cannot deal with it. [Victor Duchovni, Morgan
+       * Stanley].
+       */
+*************** static int check_server_access(SMTPD_STA
+*** 2136,2147 ****
+  	domain = name;
+  
+      /*
+       * If the domain name does not exist then we apply no restriction.
+!      * 
+       * If the domain name exists but no MX record exists, fabricate an MX record
+       * that points to the domain name itself.
+!      * 
+       * If the domain name exists but no NS record exists, look up parent domain
+       * NS records.
+       */
+      dns_status = dns_lookup(domain, type, 0, &server_list,
+--- 2140,2151 ----
+  	domain = name;
+  
+      /*
+       * If the domain name does not exist then we apply no restriction.
+!      *
+       * If the domain name exists but no MX record exists, fabricate an MX record
+       * that points to the domain name itself.
+!      *
+       * If the domain name exists but no NS record exists, look up parent domain
+       * NS records.
+       */
+      dns_status = dns_lookup(domain, type, 0, &server_list,
+*************** static const char *smtpd_expand_lookup(c
+*** 2432,2440 ****
+  
+      /*
+       * Don't query main.cf parameters, as the result of expansion could
+       * reveal system-internal information in server replies.
+!      * 
+       * Return NULL only for non-existent names.
+       */
+      if (STREQ(name, MAIL_ATTR_CLIENT)) {
+  	return (state->namaddr);
+--- 2436,2444 ----
+  
+      /*
+       * Don't query main.cf parameters, as the result of expansion could
+       * reveal system-internal information in server replies.
+!      *
+       * Return NULL only for non-existent names.
+       */
+      if (STREQ(name, MAIL_ATTR_CLIENT)) {
+  	return (state->namaddr);
+*************** static int reject_unauth_sender_login_mi
+*** 2825,2832 ****
+--- 2829,2960 ----
+  }
+  
+  #endif
+  
++ #ifdef USE_LIBSPF
++ 
++ /* reject spf - checks if the sender+client_addr passes an SPF check */
++ 
++ /*
++ TODO
++ -test config file settings
++ -document config file settings
++ -add debug info
++ -write comments
++ */
++ 
++ static int reject_spf(SMTPD_STATE *state, const char *sender, const char *client_addr)
++ {
++     int pass = 0;
++     SPF_RESULT res = 0;
++     char *client_helo = NULL;
++     char *recieved_spf = NULL;
++ 
++     char *spf_explain = NULL;
++     char *spf_trusted_forwarder = NULL;
++     char *spf_best_guess = NULL;
++ 
++     char *header_response = NULL;
++     VSTRING *vstr_header_response = NULL;
++     char *header_response_full = NULL;
++ 
++     peer_info_t *pi = NULL;
++ 
++     if (var_spf_action > 0)
++     {
++ 	recieved_spf = "Recieved-SPF: ";
++ 
++ 	if (state->helo_name && *state->helo_name) {
++ 	    client_helo = state->helo_name;
++ 	}
++ 
++ 	if (var_spf_custom_explanation != NULL && *var_spf_custom_explanation) {
++ 	    spf_explain = var_spf_custom_explanation;
++ 	}
++ 
++ 	if (var_spf_custom_trusted_forwarder != NULL && *var_spf_custom_trusted_forwarder) {
++ 	    spf_trusted_forwarder = var_spf_custom_trusted_forwarder;
++ 	}
++ 
++ 	if (var_spf_custom_best_guess_record != NULL && *var_spf_custom_best_guess_record) {
++ 	    spf_best_guess = var_spf_custom_best_guess_record;
++ 	}
++ 
++ 	pi = SPF_init(var_myhostname, client_addr, spf_explain, spf_trusted_forwarder,
++ 		      spf_best_guess, var_spf_do_use_trusted_forwarder,
++ 		      var_spf_do_use_best_guess_record);
++ 
++ 	if (pi == NULL) {
++ 	    msg_fatal("SPF: Could not allocate peer_info_t structure");
++ 	    return (SMTPD_CHECK_DUNNO);
++ 	}
++ 
++ 	SPF_smtp_helo(pi, client_helo);
++ 
++ 	if (SPF_smtp_from(pi, sender) == 0) {
++ 	    msg_error("SPF: Bad address: %s", sender);
++ 	    SPF_close(pi);
++ 
++ 	    return(SMTPD_CHECK_DUNNO);
++ 	}
++ 
++ 	res = SPF_policy_main(pi);
++ 
++ 	if (var_spf_action > 1) {
++ 	    switch (res) {
++ 		case SPF_H_FAIL:  pass = (var_spf_action > 1 ? 0 : 1); break;
++ 		case SPF_S_FAIL:  pass = (var_spf_action > 2 ? 0 : 1); break;
++ 		case SPF_NEUTRAL: pass = (var_spf_action > 3 ? 0 : 1); break;
++ 		case SPF_NONE:    pass = (var_spf_action > 4 ? 0 : 1); break;
++ 		case SPF_ERROR:   pass = (var_spf_action > 5 ? 0 : 1); break;
++ 		case SPF_UNKNOWN: pass = (var_spf_action > 6 ? 0 : 1); break;
++ 		default:          pass = 1; break;
++ 	    }
++ 	} else {
++ 	    pass = 1;
++ 	}
++ 
++ 	if (!pass) {
++ 	    SPF_close(pi);
++ 
++ 	    return(smtpd_check_reject(state, MAIL_ERROR_POLICY,
++ 		"553: Sender address rejected: SPF check failed"));
++ 	} else {
++ 	    if (var_spf_do_explain) {
++ 		state->spf_explanation = SPF_get_explain(pi);
++ 	    }
++ 
++ 	    if (var_spf_do_prepend_header) {
++ 		header_response = SPF_build_header(pi);
++ 	    }
++ 
++ 	    if (header_response != NULL) {
++ 		vstr_header_response = vstring_alloc(strlen(recieved_spf) + strlen(header_response) + 1);
++ 		vstring_strcat(vstr_header_response, recieved_spf);
++ 		vstring_strcat(vstr_header_response, header_response);
++ 		header_response_full = vstring_export(vstr_header_response);
++ 
++ 		if (state->prepend == 0) {
++ 		    state->prepend = argv_alloc(1);
++ 		}
++ 
++ 		argv_add(state->prepend, header_response_full, (char *) 0);
++ 
++ 		free(header_response);
++ 		free(header_response_full);
++ 	    }
++ 
++ 	    SPF_close(pi);
++ 
++ 	    return(SMTPD_CHECK_DUNNO);
++ 	}
++     }
++ 
++     return(SMTPD_CHECK_DUNNO);
++ }
++ 
++ #endif /* USE_LIBSPF */
++ 
+  /* check_policy_service - check delegated policy service */
+  
+  static int check_policy_service(SMTPD_STATE *state, const char *server,
+  		            const char *reply_name, const char *reply_class,
+*************** static int generic_checks(SMTPD_STATE *s
+*** 3176,3183 ****
+--- 3304,3318 ----
+  		    status = reject_unauth_sender_login_mismatch(state, state->sender);
+  	    } else
+  #endif
+  		msg_warn("restriction `%s' ignored: no SASL support", name);
++ 	} else if (strcasecmp(name, REJECT_SPF) == 0) {
++ #ifdef USE_LIBSPF
++ 	    if (state->sender && *state->sender && state->addr) {
++ 		status = reject_spf(state, state->sender, state->addr);
++ 	    } else
++ #endif /* USE_LIBSPF */
++ 		msg_warn("restriction `%s' ignored: no SPF support", name);
+  	} else if (is_map_command(state, name, CHECK_SENDER_NS_ACL, &cpp)) {
+  	    if (state->sender && *state->sender) {
+  		status = check_server_access(state, *cpp, state->sender,
+  					     T_NS, state->sender,
+*************** static int generic_checks(SMTPD_STATE *s
+*** 3303,3310 ****
+--- 3438,3446 ----
+  	    status = generic_checks(state, list, reply_name,
+  				    reply_class, def_acl);
+  	}
+  
++ 
+  	/*
+  	 * Error: undefined restriction name.
+  	 */
+  	else {
+*************** static int check_rcpt_maps(SMTPD_STATE *
+*** 3738,3746 ****
+  
+      /*
+       * At this point, anything that resolves to the error mailer is known to
+       * be undeliverable.
+!      * 
+       * XXX Until the address resolver does final address resolution, known and
+       * unknown recipients in virtual alias domains will both resolve to
+       * "error:user unknown".
+       */
+--- 3874,3882 ----
+  
+      /*
+       * At this point, anything that resolves to the error mailer is known to
+       * be undeliverable.
+!      *
+       * XXX Until the address resolver does final address resolution, known and
+       * unknown recipients in virtual alias domains will both resolve to
+       * "error:user unknown".
+       */
+*************** static int check_rcpt_maps(SMTPD_STATE *
+*** 3753,3765 ****
+  				   STR(reply->nexthop)));
+  
+      /*
+       * Search the recipient lookup tables of the respective address class.
+!      * 
+       * XXX Use the less expensive maps_find() (case is already folded) instead
+       * of the baroque mail_addr_find(). But then we have to strip the domain
+       * and deal with address extensions ourselves.
+!      * 
+       * XXX But that would break sites that use the virtual delivery agent for
+       * local delivery, because the virtual delivery agent requires
+       * user@domain style addresses in its user database.
+       */
+--- 3889,3901 ----
+  				   STR(reply->nexthop)));
+  
+      /*
+       * Search the recipient lookup tables of the respective address class.
+!      *
+       * XXX Use the less expensive maps_find() (case is already folded) instead
+       * of the baroque mail_addr_find(). But then we have to strip the domain
+       * and deal with address extensions ourselves.
+!      *
+       * XXX But that would break sites that use the virtual delivery agent for
+       * local delivery, because the virtual delivery agent requires
+       * user@domain style addresses in its user database.
+       */
+*************** char   *smtpd_check_data(SMTPD_STATE *st
+*** 3895,3903 ****
+      state->defer_if_permit.active = 0;
+  
+      /*
+       * Apply restrictions in the order as specified.
+!      * 
+       * XXX We cannot specify a default target for a bare access map.
+       */
+      SMTPD_CHECK_RESET();
+      status = setjmp(smtpd_check_buf);
+--- 4031,4039 ----
+      state->defer_if_permit.active = 0;
+  
+      /*
+       * Apply restrictions in the order as specified.
+!      *
+       * XXX We cannot specify a default target for a bare access map.
+       */
+      SMTPD_CHECK_RESET();
+      status = setjmp(smtpd_check_buf);
+*** postfix-2.1.4/src/smtpd/smtpd_state.c	Wed Apr 21 11:23:49 2004
+--- postfix-2.1.4.libspf/src/smtpd/smtpd_state.c	Sat Sep 11 10:15:11 2004
+*************** void    smtpd_state_init(SMTPD_STATE *st
+*** 118,125 ****
+--- 118,129 ----
+      if (var_smtpd_sasl_enable)
+  	smtpd_sasl_connect(state, VAR_SMTPD_SASL_OPTS, var_smtpd_sasl_opts);
+  #endif
+  
++ #ifdef USE_LIBSPF
++     state->spf_explanation = NULL;
++ #endif
++ 
+      /*
+       * Initialize peer information.
+       */
+      smtpd_peer_init(state);
+*** postfix-2.1.4/src/smtpd/Makefile	Wed Sep 15 08:51:49 2004
+--- postfix-2.1.4.libspf/src/smtpd/Makefile	Sat Sep 11 06:30:32 2004
+*************** OBJS	= smtpd.o smtpd_token.o smtpd_check
+*** 22,35 ****
+  	smtpd_xforward.o
+  HDRS	= smtpd_token.h smtpd_check.h smtpd_chat.h smtpd_sasl_proto.h \
+  	smtpd_sasl_glue.h smtpd_proxy.h
+  TESTSRC	= smtpd_token_test.c
+! DEFS	= -I. -I$(INC_DIR) -D$(SYSTYPE)
+  CFLAGS	= $(DEBUG) $(OPT) $(DEFS)
+  TESTPROG= smtpd_token smtpd_check
+  PROG	= smtpd
+  INC_DIR	= ../../include
+! LIBS	= ../../lib/libmaster.a ../../lib/libglobal.a ../../lib/libdns.a ../../lib/libutil.a
+  
+  .c.o:;	$(CC) $(CFLAGS) -c $*.c
+  
+  $(PROG): $(OBJS) $(LIBS)
+--- 22,35 ----
+  	smtpd_xforward.o
+  HDRS	= smtpd_token.h smtpd_check.h smtpd_chat.h smtpd_sasl_proto.h \
+  	smtpd_sasl_glue.h smtpd_proxy.h
+  TESTSRC	= smtpd_token_test.c
+! DEFS	= -I. -I$(INC_DIR) -D$(SYSTYPE) -DUSE_LIBSPF
+  CFLAGS	= $(DEBUG) $(OPT) $(DEFS)
+  TESTPROG= smtpd_token smtpd_check
+  PROG	= smtpd
+  INC_DIR	= ../../include
+! LIBS	= ../../lib/libmaster.a ../../lib/libglobal.a ../../lib/libdns.a ../../lib/libutil.a /usr/local/lib/libspf.so
+  
+  .c.o:;	$(CC) $(CFLAGS) -c $*.c
+  
+  $(PROG): $(OBJS) $(LIBS)
+*** postfix-2.1.4/src/smtpd/smtpd.h	Wed Apr 21 11:23:33 2004
+--- postfix-2.1.4.libspf/src/smtpd/smtpd.h	Sat Sep 11 10:03:17 2004
+*************** typedef struct SMTPD_STATE {
+*** 104,111 ****
+--- 104,118 ----
+      VSTRING *sasl_decoded;
+  #endif
+  
+      /*
++      * LibSPF specific
++      */
++ #ifdef USE_LIBSPF
++     char *spf_explanation;
++ #endif
++ 
++     /*
+       * Specific to smtpd access checks.
+       */
+      int     sender_rcptmap_checked;	/* sender validated against maps */
+      int     recipient_rcptmap_checked;	/* recipient validated against maps */
+*************** extern void smtpd_peer_reset(SMTPD_STATE
+*** 207,225 ****
+  #define SMTPD_PEER_CODE_PERM	5
+  
+   /*
+    * Choose between normal or forwarded attributes.
+!   * 
+    * Note 1: inside the SMTP server, forwarded attributes must have the exact
+    * same representation as normal attributes: unknown string values are
+    * "unknown", except for HELO which defaults to null. This is better than
+    * having to change every piece of code that accesses a possibly forwarded
+    * attribute.
+!   * 
+    * Note 2: outside the SMTP server, the representation of unknown/known
+    * attribute values is different in queue files, in queue manager delivery
+    * requests, and in over-the-network XFORWARD commands.
+!   * 
+    * Note 3: if forwarding client information, don't mix information from the
+    * current SMTP session with forwarded information from an up-stream
+    * session.
+    */
+--- 214,232 ----
+  #define SMTPD_PEER_CODE_PERM	5
+  
+   /*
+    * Choose between normal or forwarded attributes.
+!   *
+    * Note 1: inside the SMTP server, forwarded attributes must have the exact
+    * same representation as normal attributes: unknown string values are
+    * "unknown", except for HELO which defaults to null. This is better than
+    * having to change every piece of code that accesses a possibly forwarded
+    * attribute.
+!   *
+    * Note 2: outside the SMTP server, the representation of unknown/known
+    * attribute values is different in queue files, in queue manager delivery
+    * requests, and in over-the-network XFORWARD commands.
+!   *
+    * Note 3: if forwarding client information, don't mix information from the
+    * current SMTP session with forwarded information from an up-stream
+    * session.
+    */
+*** postfix-2.1.4/conf/spf.cf.example	Wed Dec 31 16:00:00 1969
+--- postfix-2.1.4.libspf/conf/spf.cf.example	Sat Sep 11 12:55:49 2004
+***************
+*** 0 ****
+--- 1,98 ----
++ # SPF ACTION
++ #
++ # Describes the action to take (i.e., accept or reject) based on the SPF
++ # result.
++ #
++ # 0:  SPF checking disabled
++ # 1+: SPF checks enabled; all mail is accepted regardless of result.
++ # 2:  messages with a result of 'fail' are rejected;
++ #     all other result types accepted
++ # 3:  rejected: fail, softfail; accepted: all others
++ # 4:  rejected: fail, softfail, neutral; accepted: all others
++ # 5:  rejected: fail, softfail, neutral, none; accepted: all others
++ # 6:  rejected: fail, softfail, neutral, none, error; accepted: all others
++ # 7:  rejected: fail, softfail, neutral, none, error, unknown;
++ #     accepted: all others (only pass at this point)
++ #
++ #spf_action = 1
++ 
++ # PREPEND SPF HEADER
++ #
++ # Add the Recieved-SPF: header to SPF-checked messages
++ #
++ #spf_do_prepend_header = yes
++ 
++ # ADD EXPLANATIONS TO DATA
++ #
++ # Prepends a string explaining the SPF result (except if result is PASS)
++ # to DATA.
++ #
++ # Note: LibSPF has a built-in default explanation; this setting
++ #       may be turned on without modifying spf_custom_explanation.  The
++ #       default LibSPF values are given as examples for their respective
++ #       spf_custom_* conf vars.
++ #
++ # See also: spf_custom_explanation
++ #
++ #spf_do_explain = no
++ 
++ # USE A TRUSTED FORWARDER
++ #
++ # For domains that do not publish SPF records, try to use a trusted forwarder
++ # instead.
++ #
++ # Note: LibSPF has a built-in default trusted forwarder record; this setting
++ #       may be turned on without modifying spf_custom_trusted_forwarder.  The
++ #       default LibSPF values are given as examples for their respective
++ #       spf_custom_* conf vars.
++ #
++ # See also: spf_custom_trusted_forwarder
++ #
++ #spf_do_use_trusted_forwarder = no
++ 
++ # USE A BEST GUESS RECORD
++ #
++ # Apply a "best guess" generic record for domains who do not publish SPF and
++ # did not pass with a trusted forwarder.
++ #
++ # Note: LibSPF has a built-in default best guess record; this setting
++ #       may be turned on without modifying spf_custom_best_guess_record.  The
++ #       default LibSPF values are given as examples for their respective
++ #       spf_custom_* conf vars.
++ #
++ # See also: spf_custom_best_guess_record
++ #
++ #spf_do_use_best_guess_record = no
++ 
++ # SET CUSTOM EXPLANATION
++ #
++ # Set a custom SPF result explanation that is prepended to DATA whenever the
++ # result is anything other than PASS.
++ #
++ # Note: Is not used unless spf_do_explain = yes
++ #
++ # Ex: See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR}
++ #
++ #spf_custom_explanation =
++ 
++ # SET CUSTOM TRUSTED FORWARDER
++ #
++ # Set a custom trusted forwarder that is used when considering a domain which
++ # does not publish SPF records.
++ #
++ # Note: Is not used unless spf_do_use_trusted_forwarder = yes
++ #
++ # Ex: v=spf1 include:spf.trusted-forwarder.org
++ #
++ #spf_custom_trusted_forwarder =
++ 
++ # SET CUSTOM BEST GUESS RECORD
++ #
++ # Set a custom best guess record that is applied to domains who do not publish
++ # SPF and did not pass with a trusted forwarder.
++ #
++ # Note: Is not used unless spf_do_use_best_guess_record = yes
++ #
++ # Ex: v=spf1 a/24 mx/24 ptr
++ #
++ #spf_custom_best_guess_record =

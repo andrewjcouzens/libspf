@@ -1,0 +1,108 @@
+sendmail-8.12.10/11 HOWTO
+
+unpack libspf
+change into that directory
+make
+cp libspf.so.1.0.1 /usr/lib/libspf.so.1.0.1
+cp spf.h /usr/include
+cd /usr/lib
+ln -s libspf.so.1.0.1 libspf.so.1
+ln -s libspf.so.1 libspf.so
+
+Perhaps you have to use /usr/local/include and /usr/local/lib instead
+of /usr/include and /usr/lib
+
+SENDMAIL:
+
+unpack sendmail-8.12.10
+change into that directory
+patch -p0 < ../sendmail-8.12.11-libspf.0.xx.diff 
+
+The output for the patch should look like:
+-- BEGIN PASTE
+patching file sendmail/readcf.c
+patching file sendmail/Makefile.m4
+patching file sendmail/sendmail.h
+patching file sendmail/srvrsmtp.c
+patching file cf/feature/spf.m4
+patching file cf/m4/proto.m4
+-- END PASTE
+
+Then build sendmail as you normally would.
+
+To enable SPF you have to add the feature spf. So in your
+configuration-File sendmail.config.mc add the minimal
+configuration-line
+
+FEAUTRE(spf)dnl
+
+If you want to config SPF you can add also the options to the
+featur line:
+
+FEATURE(spf, `SPFAction', `SPFHeaderState', `SPFBestGuessState', `SPFTrustedForwarderState', `SPFExplainState', `SPFBestGuess', `SPFTrustedForwarder', `SPFExplain')dnl
+
+PLEASE SEE THE README IN THIS DIRECTORY FOR AN EXPLANATION
+OF THE OPTIONS
+
+After that you can create a new sendmail.cf with M4, like you normaly do.
+
+Want to write something prettier and more concise, and covering
+a static build?  Please do so and submit it to jcouzens@obscurity.org
+
+
+
+*******************************************************
+*********** CUSTOM CF MOD BELOW THIS LINE *************
+*******************************************************
+
+If you prefere to create your cf without M4 please make the following
+changes to your sendmail.cf
+
+Search for:   #   Format of headers   #
+
+and make it look like: 
+
+-- BEGIN PASTE
+#   Format of headers   #
+#########################
+
+H?P?Return-Path: <$g>
+HReceived-SPF: ${spfheader}      <--- ADD THIS LINE HERE
+HReceived: $?sfrom $s $.$?_($?s$|from $.$_)
+-- END PASTE
+
+and then:
+
+Search for:   H?M?Message-Id: <$t.$i@$j>
+
+And make it look like:
+
+-- BEGIN PASTE
+H?M?Resent-Message-Id: <$t.$i@$j>
+H?M?Message-Id: <$t.$i@$j>
+
+#############################################################################################
+### SPF (ANTI-FORGERY OPTIONS) ############################################################## 
+#############################################################################################
+#
+# int (0 - 7) - Action to take based on SPF result greater than this number
+# bool (true/false) - Apply 'Received-SPF:' headers to message headers?
+# int (0/1) - Use 'best guess' when trusted forwarder fails? (false = off, true = on)
+# text - Place SPF query language here to be executed during best guess attempt
+# int (0/1) - Use trusted forwarder when SPF query returns 'none' (0 = off, 1 = on) 
+# text - Place SPF query language here to be executed during trusted forwarder attempt 
+# bool (true/false) - Provide explanations for any SPF result thats NOT a 'pass'?
+# text - Text to expand (can use SPF macros) to provide users when SPF result is NOT a 'pass'
+#
+##############################################################################################
+##############################################################################################
+
+O SPFAction=1
+O SPFHeaderState=True
+O SPFBestGuessState=0
+O SPFBestGuess=v=spf1 a/24 mx/24 ptr 
+O SPFTrustedForwarderState=0
+O SPFTrustedForwarder=v=spf1 include:spf.trusted-forwarder.org 
+O SPFExplainState=True
+O SPFExplain=See http://spf.pobox.com/why.html?sender=%{S}&ip=%{I}&receiver=%{xR} 
+-- END PASTE

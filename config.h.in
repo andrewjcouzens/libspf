@@ -1,0 +1,201 @@
+/* config.h.in.  Generated from configure.in by autoheader.  */
+
+/* Define to 1 if you have the <arpa/inet.h,> header file. */
+#undef HAVE_ARPA_INET_H_
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <error.h,> header file. */
+#undef HAVE_ERROR_H_
+
+/* Define to 1 if you have the `gethostbyname,' function. */
+#undef HAVE_GETHOSTBYNAME_
+
+/* Define to 1 if you have the `gethostbyname_r' function. */
+#undef HAVE_GETHOSTBYNAME_R
+
+/* Have pwd.h */
+#undef HAVE_GRP_H
+
+/* Define to 1 if you have the `inet_ntoa,' function. */
+#undef HAVE_INET_NTOA_
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `bind' library (-lbind). */
+#undef HAVE_LIBBIND
+
+/* Define to 1 if you have the `c' library (-lc). */
+#undef HAVE_LIBC
+
+/* Define to 1 if you have the `nsl' library (-lnsl). */
+#undef HAVE_LIBNSL
+
+/* Define to 1 if you have the `resolv' library (-lresolv). */
+#undef HAVE_LIBRESOLV
+
+/* Define to 1 if you have the `socket' library (-lsocket). */
+#undef HAVE_LIBSOCKET
+
+/* Define to 1 if you have the `localtime_r,' function. */
+#undef HAVE_LOCALTIME_R_
+
+/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
+   to 0 otherwise. */
+#undef HAVE_MALLOC
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `memset,' function. */
+#undef HAVE_MEMSET_
+
+/* Define to 1 if you have the `mkdir' function. */
+#undef HAVE_MKDIR
+
+/* Define to 1 if you have the <netdb.h,> header file. */
+#undef HAVE_NETDB_H_
+
+/* Define to 1 if you have the <netinet/in.h,> header file. */
+#undef HAVE_NETINET_IN_H_
+
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
+
+/* Have pwd.h */
+#undef HAVE_PWD_H
+
+/* Define to 1 if your system has a GNU libc compatible `realloc' function,
+   and to 0 otherwise. */
+#undef HAVE_REALLOC
+
+/* Define to 1 if you have the `res_query' function. */
+#undef HAVE_RES_QUERY
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <stdlib.h,> header file. */
+#undef HAVE_STDLIB_H_
+
+/* Define to 1 if you have the `strcasecmp,' function. */
+#undef HAVE_STRCASECMP_
+
+/* Define to 1 if you have the `strchr,' function. */
+#undef HAVE_STRCHR_
+
+/* Define to 1 if you have the `strdup,' function. */
+#undef HAVE_STRDUP_
+
+/* Define to 1 if you have the `strftime' function. */
+#undef HAVE_STRFTIME
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <strings.h,> header file. */
+#undef HAVE_STRINGS_H_
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <string.h,> header file. */
+#undef HAVE_STRING_H_
+
+/* Define to 1 if you have the `strrchr,' function. */
+#undef HAVE_STRRCHR_
+
+/* Define to 1 if you have the `strstr,' function. */
+#undef HAVE_STRSTR_
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if the system has the type `time_t'. */
+#undef HAVE_TIME_T
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <unistd.h,> header file. */
+#undef HAVE_UNISTD_H_
+
+/* Define to 1 if the system has the type `u_char'. */
+#undef HAVE_U_CHAR
+
+/* Define to 1 if declarations in headers are surrounded by
+   __{BEGIN,END}_DECLS */
+#undef HAVE__BEGIN_DECLS
+
+/* "Define to 1 if __FUNCTION__ is defined" */
+#undef HAVE___FUNCTION__
+
+/* "Define to 1 if __func__ is defined" */
+#undef HAVE___FUNC__
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Check to fix sizeof bug that can't print %d */
+#undef SIZEOF_INT
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if your <sys/time.h> declares `struct tm'. */
+#undef TM_IN_SYS_TIME
+
+/* "Darwin/OSX" */
+#undef _WITH_DARWINPPC
+
+/* "FreeBSD" */
+#undef _WITH_FREEBSD
+
+/* "OpenBSD" */
+#undef _WITH_OPENBSD
+
+/* Define to 1 if type `char' is unsigned and you are not using gcc.  */
+#ifndef __CHAR_UNSIGNED__
+# undef __CHAR_UNSIGNED__
+#endif
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif
+
+/* Define to rpl_malloc if the replacement function should be used. */
+#undef malloc
+
+/* Define to rpl_realloc if the replacement function should be used. */
+#undef realloc
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
