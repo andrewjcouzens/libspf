@@ -285,13 +285,13 @@ peer_info_t *SPF_init(const char *local, const char *rip, const char *expl,
 
     return(NULL);
   }
-
    /*
    * 'ip_ver' is the Internet Address protocol version being used
    * at any given time during an SPF parse.  Whilst this is intended to
    * support IPv6 at this time it is hard set to IPv4 (AF_INET)
   */
-  snprintf(p->ip_ver, SPF_MAX_IP_ADDR, "in-addr");
+  
+  snprintf(p->ip_ver, SPF_MAX_IP_VER, "%s", "in-addr");
 
    /*
    * Obtain the number of seconds since the UNIX Epoch or UTC time
@@ -871,6 +871,7 @@ SPF_BOOL SPF_parse_policy(peer_info_t *p, const char *policy)
   /* allocate memory and assign working pointer for policy */
   cp = copy = xstrndup(policy, (p_len + 1));
 
+
   /* loops through the entire policy string until its exhausted */
   while (*cp)
   {
@@ -1023,7 +1024,7 @@ SPF_BOOL SPF_parse_policy(peer_info_t *p, const char *policy)
         if ((tmp_ptr = strstr(token_ptr, ":")) != NULL)
         {
           tmp_ptr++;
-
+          macro = NULL;
           if (UTIL_is_macro(tmp_ptr) == SPF_TRUE)
           {
             xvprintf("this INCLUDE mechanism contained macros [%s]\n", tmp_ptr);
