@@ -136,7 +136,7 @@
 
 /* Define to 1 if declarations in headers are surrounded by
    __{BEGIN,END}_DECLS */
-#undef HAVE__BEGIN_DECLS
+#define HAVE__BEGIN_DECLS 1
 
 /* "Define to 1 if __FUNCTION__ is defined" */
 #undef HAVE___FUNCTION__
